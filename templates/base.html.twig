@@ -40,59 +40,20 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
-                                Orders
+                            <a class="nav-link" href="{{ path('app_project_new') }}">
+                                New Projects
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">
-                                Products
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">
-                                Customers
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">
-                                Reports
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">
-                                Settings
-                            </a>
-                        </li>
+                        {{ render(controller('App\\Controller\\ProjectController::projectItems')) }}
                     </ul>
                 </div>
             </nav>
 
             <!-- Основной контент -->
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-                <h1 class="mt-4">Content Area</h1>
+                <h1 class="mt-4">{% block h1 %}{% endblock %}</h1>
                 {% block body %}{% endblock %}
-                <p>Welcome to the main content area. Here you can add your own text, images, or other elements.</p>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card mb-4 shadow-sm">
-                            <div class="card-body">
-                                <h5 class="card-title">Card 1</h5>
-                                <p class="card-text">Some example text for the first card.</p>
-                                <a href="#" class="btn btn-primary">Learn more</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card mb-4 shadow-sm">
-                            <div class="card-body">
-                                <h5 class="card-title">Card 2</h5>
-                                <p class="card-text">Some example text for the second card.</p>
-                                <a href="#" class="btn btn-primary">Learn more</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
             </main>
         </div>
     </div>

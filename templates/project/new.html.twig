@@ -1,0 +1,8 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New Project{% endblock %}
+{% block h1 %}New Project{% endblock %}
+
+{% block body %}
+{% include 'project/_form.html.twig' with { form: form } %}
+{% endblock %}

@@ -1,0 +1,14 @@
+
+
+{% for hash,item in items %}
+    <li class="nav-item" style="padding-left: {{(item.depath * 10)}}px">
+        {% if item.type == 'dir' %}
+            <a class="nav-link" href="{{ path('app_dir_edit', {hash: hash}) }}">{{ item.name }}</a>
+        {% elseif item.type == 'file' %}
+            <a class="nav-link" href="{{ path('app_file_edit', {hash: hash}) }}">{{ item.name }}</a>
+        {% else %}
+            <a class="nav-link" href="#">{{ item.name }}</a>
+        {% endif%}
+
+    </li>
+{% endfor %}
