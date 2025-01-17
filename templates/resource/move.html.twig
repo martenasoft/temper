@@ -1,0 +1,27 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Move to{% endblock %}
+{% block h1 %}Move to{% endblock %}
+
+{% block body %}
+
+   <div class="row">
+      <div class="col-6">
+         <form method="POST">
+            {% for index,item in tree %}
+               <div class="form-check">
+                   {% if resource.uuid != item.uuid %}
+                        <input type="radio" id="form_Dir_{{ index }}" name="form[Dir]" class="form-check-input" value="{{ item['uuid'] }}">
+                   {% endif %}
+                  <label style="padding-left: {{ item['depth'] * 30 }}px" class="form-check-label required" for="form_Dir_{{ index }}">{{ item['name'] }}</label>
+               </div>
+            {% endfor %}
+             <input type="hidden" id="form__token" name="form[_token]" value="{{ form.children._token.vars.value }}">
+             <hr>
+             {{ include('elements/form_buttons.html.twig') }}
+         </form>
+
+      </div>
+   </div>
+
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Resource{% endblock %}
+{% block h1 %}Edit Resource{% endblock %}
+
+{% block body %}
+
+    {{ include('resource/_form.html.twig', {project: project}) }}
+
+{% endblock %}

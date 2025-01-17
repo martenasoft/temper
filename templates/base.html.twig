@@ -44,14 +44,29 @@
                                 New Projects
                             </a>
                         </li>
-                        {{ render(controller('App\\Controller\\ProjectController::projectItems')) }}
+                        {{ render(controller('App\\Controller\\ProjectController::navItems')) }}
                     </ul>
                 </div>
             </nav>
 
             <!-- Основной контент -->
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-                <h1 class="mt-4">{% block h1 %}{% endblock %}</h1>
+                <div class="row">
+                    <di class="col-6">
+                        <h1 class="mt-4">{% block h1 %}{% endblock %}</h1>
+                    </di>
+                    <div class="col-6 text-end pt-4">{% block header_admin_buttons %}{% endblock %}</div>
+                </div>
+
+                {% for label, messages in app.flashes %}
+                    <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
+                        {% for message in messages %}
+                            {{ message }}
+                        {% endfor %}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+
                 {% block body %}{% endblock %}
 
             </main>

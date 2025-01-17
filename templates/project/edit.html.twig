@@ -1,0 +1,28 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit "{{ project.name }}"{% endblock %}
+{% block h1 %}Edit "{{ project.name }}"{% endblock %}
+
+{% block header_admin_buttons %}
+
+    <a class="btn btn-lg btn-outline-info" href="{{ path('app_resource_new', {
+        projectUuid: project.uuid,
+        resourceUuid: resourceItem.uuid is not defined ? null : resourceItem.uuid
+    }) }}">Add catalog</a>
+    <a class="btn btn-lg btn-outline-info" href="{{ path('app_resource_new', {
+        projectUuid: project.uuid,
+        resourceUuid: resourceItem.uuid is not defined ? null : resourceItem.uuid,
+        type: 'file'
+    }) }}">Add file</a>
+
+
+    <a class="btn btn-lg btn-dark" href="{{ path('app_project_edit', {projectUuid: project.uuid}) }}">Edit</a>
+    <a class="btn btn-lg btn-danger" onclick="return confirm('Delete project?')"
+       href="{{ path('app_project_delete', {projectUuid: project.uuid}) }}">Delete</a>
+{% endblock %}
+
+{% block body %}
+    {{ include('project/_form.html.twig', {'button_label': 'Update'}) }}
+    <hr>
+    {{ include('project/_items.html.twig', {resources: resources, resourceItem: resourceItem}) }}
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Project {% endblock %}
+{% block h1 %}Project {% endblock %}
+{% block header_admin_buttons %}
+
+{% endblock %}
+{% block body %}
+
+    {{ include('project/_form.html.twig', {form: form}) }}
+
+{% endblock %}

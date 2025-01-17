@@ -2,8 +2,8 @@
     <div class="col-6">
         {{ form_start(form) }}
         {{ form_widget(form) }}
-        {{ include('elements/form_buttons.html.twig') }}
-
+        <hr>
+        {{ include('elements/form_buttons.html.twig', {back_uri: path('app_project_edit', {projectUuid: project.uuid})}) }}
         {{ form_end(form) }}
     </div>
 </div>
