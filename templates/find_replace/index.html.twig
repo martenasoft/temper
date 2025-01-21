@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Find/Replace{% endblock %}
+{% block h1 %}Find/Replace{% endblock %}
+
+{% block body %}
+    {{ form_start(form) }}
+        <div class="row">
+            <div class="col-8">
+                {{ form_widget(form.word) }}
+            </div>
+            <div class="col-4">
+                <button type="submit" class="btn btn-dark">Find</button>
+            </div>
+        </div>
+
+    {{ form_end(form) }}
+{% endblock %}

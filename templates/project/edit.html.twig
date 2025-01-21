@@ -5,16 +5,26 @@
 
 {% block header_admin_buttons %}
 
-    <a class="btn btn-lg btn-outline-info" href="{{ path('app_resource_new', {
-        projectUuid: project.uuid,
-        resourceUuid: resourceItem.uuid is not defined ? null : resourceItem.uuid
-    }) }}">Add catalog</a>
-    <a class="btn btn-lg btn-outline-info" href="{{ path('app_resource_new', {
-        projectUuid: project.uuid,
-        resourceUuid: resourceItem.uuid is not defined ? null : resourceItem.uuid,
-        type: 'file'
-    }) }}">Add file</a>
+    {% if resourceItem.type is not defined or resourceItem.type.value == 1 %}
 
+        <a class="btn btn-lg btn-outline-dark" href="{{ path('app_upload', {
+            projectUuid: project.uuid,
+            resourceUuid: resourceItem.uuid is not defined ? null : resourceItem.uuid
+        }) }}">Upload</a>
+        <a class="btn btn-lg btn-outline-dark" href="{{ path('app_find_replace', {
+            projectUuid: project.uuid,
+            resourceUuid: resourceItem.uuid is not defined ? null : resourceItem.uuid
+        }) }}">Find/Replace</a>
+        <a class="btn btn-lg btn-outline-dark" href="{{ path('app_resource_new', {
+            projectUuid: project.uuid,
+            resourceUuid: resourceItem.uuid is not defined ? null : resourceItem.uuid
+        }) }}">Add catalog</a>
+        <a class="btn btn-lg btn-outline-dark" href="{{ path('app_resource_new', {
+            projectUuid: project.uuid,
+            resourceUuid: resourceItem.uuid is not defined ? null : resourceItem.uuid,
+            type: 'file'
+        }) }}">Add file</a>
+    {% endif %}
 
     <a class="btn btn-lg btn-dark" href="{{ path('app_project_edit', {projectUuid: project.uuid}) }}">Edit</a>
     <a class="btn btn-lg btn-danger" onclick="return confirm('Delete project?')"
@@ -22,7 +32,71 @@
 {% endblock %}
 
 {% block body %}
+
     {{ include('project/_form.html.twig', {'button_label': 'Update'}) }}
     <hr>
-    {{ include('project/_items.html.twig', {resources: resources, resourceItem: resourceItem}) }}
+
+    {% if resourceItem is null or resourceItem.type is not defined or resourceItem.type.value == 1 %}
+        {{ include('project/_items.html.twig', {resources: resources, resourceItem: resourceItem}) }}
+    {% else %}
+        <div class="row">
+            <div class="col-6"><h2>{{ resourceItem.name }}</h2></div>
+            <div class="col-6 text-end">
+                <a href="{{ path('app_resource_edit', {projectUuid: project.uuid, resourceUuid: resourceItem.uuid}) }}"
+                   class="btn btn-dark">Edit</a>
+                <a href="{{ path('app_resource_move', {projectUuid: project.uuid, resourceUuid: resourceItem.uuid}) }}"
+                   class="btn btn-dark">Move</a>
+                <a href="{{ path('app_resource_delete', {projectUuid: project.uuid, resourceUuid: resourceItem.uuid}) }}"
+                   onclick="return confirm('Delete this directory?')" class="btn btn-danger">Delete</a>
+
+            </div>
+        </div>
+
+        <div id="editor" style="height: 0"></div>
+        <textarea id="resource_content">{{ resourceItem.content }}</textarea>
+
+        {% set fileType = '.' in form.vars.value.name  ? form.vars.value.name | split('.' ) | last : 'php' %}
+
+
+        <script>
+            require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.40.0/min/vs' } });
+            require(['vs/editor/editor.main'], function () {
+
+                const textarea = document.getElementById('resource_content');
+                const editorContainer = document.createElement('div');
+                editorContainer.style.height = '400px'; // Укажите высоту редактора
+                editorContainer.style.width = '100%'; // Укажите высоту редактора
+                textarea.style.display = 'none'; // Скрываем textarea
+                textarea.parentNode.insertBefore(editorContainer, textarea);
+
+                const editor = monaco.editor.create(editorContainer, {
+                    value: textarea.value,
+                    language: '{{ fileType }}',
+                    theme: 'vs-dark',
+                    readOnly: true
+                });
+
+                editor.onDidChangeModelContent(() => {
+                    textarea.value = editor.getValue();
+                });
+            });
+        </script>
+
+    {% endif %}
+
+    {% if resourceItem is not null %}
+<hr>
+        <a class="btn btn-dark" href="{{ path('app_project_edit', {projectUuid: project.uuid}) }}">back to list </a>
+        {% if resourceItem.parent is not null %}
+        <a class="btn btn-dark" href="{{ path('app_project_edit', {projectUuid: project.uuid, resourceUuid: resourceItem.parent.uuid}) }}">back to {{ resourceItem.name }} list</a>
+
+        {% endif %}
+    {% endif %}
+
+
+
+
+
+
 {% endblock %}
+

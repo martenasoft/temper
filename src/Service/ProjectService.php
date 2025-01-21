@@ -4,9 +4,11 @@ namespace App\Service;
 
 use App\Entity\Project;
 use App\Entity\Resource;
+use App\Entity\User;
 use App\Repository\ProjectRepository;
 use App\Repository\ResourceRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Form;
 use Symfony\Component\Form\FormBuilder;
@@ -22,13 +24,17 @@ class ProjectService
     private string $projectDir = '';
 
     public function __construct(
-        private KernelInterface $kernel,
-        private ProjectRepository $projectRepository,
-        private ResourceRepository $resourceRepository,
-        private EntityManagerInterface $entityManager
+        private KernelInterface        $kernel,
+        private ProjectRepository      $projectRepository,
+        private ResourceRepository     $resourceRepository,
+        private EntityManagerInterface $entityManager,
+        private ResourceService        $resourceService,
+        private TemplateService         $templateService,
+        private BuildService $buildService
     ) {
         $this->projectDir = $this->kernel->getProjectDir() . '/' . self::PROJECT_PATH;
     }
+
     public function save(Project $project, string $userPath): void
     {
         $dirName = $this->getProjectDirName($project->getName(), $userPath);
@@ -37,45 +43,73 @@ class ProjectService
         }
     }
 
-    public function getProjectFs(string $userPath, bool $isRootDir = false): array
+    public function loadToDbFromFs(string $path, User $user, Project $project, ?Resource $parentResource = null): void
     {
-        $dir = $userPath;
+        if (file_exists($path)) {
+            $dirs = scandir($path);
+            foreach ($dirs as $name) {
+                if ($name === '.' || $name === '..') {
+                    continue;
+                }
+                $path_ = $path . DIRECTORY_SEPARATOR . $name;
+                $type = 1;
+                $content = null;
+                if (!file_exists($path_)) {
+                    return;
 
-        if (!$isRootDir) {
-            $dir = $this->projectDir .'/'.$userPath;
+                }
+
+                if (is_file($path_)) {
+                    $type = 2;
+                    $content = file_get_contents($path_);
+                }
+
+
+                $resource = $this
+                    ->resourceRepository
+                    ->getResourceByProjectUuidAndNameQueryBuilder($user, $project->getUuid(), $name)
+                    ->andWhere(ResourceRepository::ALIAS .'.type=:type')
+                    ->setParameter('type', $type)
+                    ->getQuery()
+                    ->getOneOrNullResult();
+
+
+                if (!$resource) {
+                    $resource = new Resource();
+                    $resource
+                        ->setOwner($user)
+                        ->setProject($project)
+                        ->setParent($parentResource)
+                        ->setType(EnumResourceType::setValue($type))
+                        ->setName($name)
+                        ->setContent($content)
+                    ;
+
+
+                    $this->entityManager->persist($resource);
+                    $this->entityManager->flush();
+                }
+
+                if ($type == 1) {
+                    $this->loadToDbFromFs($path_, $user, $project, $resource);
+                }
+            }
         }
-
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::SELF_FIRST
-        );
-        $result = [];
-        foreach ($iterator as $fileinfo) {
-
-            $hash = sha1( $fileinfo->getPathname().$fileinfo->getFilename().$iterator->getDepth());
-            $result[$hash] = [
-                'pathname' => $fileinfo->getPathname(),
-                'depath' =>$iterator->getDepth(),
-                'name' => $fileinfo->getFilename(),
-                'type' => $fileinfo->isDir() ? 'dir' : 'file',
-            ];
-        }
-        return $result;
     }
 
     private function getProjectDirName(string $name, string $userPath): string
     {
         $slugger = new AsciiSlugger();
-        return  $this->projectDir . '/' .$userPath . '/'.$slugger->slug($name);
+        return $this->projectDir . '/' . $userPath . '/' . $slugger->slug($name);
     }
 
-    public function getProjectResourceByUuid(string $projectUuid, ?string $resourceUuid = null): array
+    public function getProjectResourceByUuid(User $user, string $projectUuid, ?string $resourceUuid = null): array
     {
-        $project = $this->projectRepository->getOneByUuidQueryBuilder($projectUuid)->getQuery()->getOneOrNullResult();
+        $project = $this->projectRepository->getOneByUuidQueryBuilder($user, $projectUuid)->getQuery()->getOneOrNullResult();
         $resource = null;
 
         if ($resourceUuid) {
-            $resource = $this->resourceRepository->getOneByUuidQueryBuilder($resourceUuid)->getQuery()->getOneOrNullResult();
+            $resource = $this->resourceRepository->getOneByUuidQueryBuilder($user, $resourceUuid)->getQuery()->getOneOrNullResult();
         }
 
         return [
@@ -94,51 +128,58 @@ class ProjectService
         return $this->resourceRepository->getItemsQueryBuilder($project, $resource)->getQuery()->getResult();
     }
 
-    public function collectTemplates(string $projectUuid): array
+    public function collectTemplates(string $projectUuid, User $user): array
     {
         $projectQueryBuilder = $this->resourceRepository->getAllFiles(
-            queryBuilder:  $this->projectRepository->getOneByUuidQueryBuilder($projectUuid)
+            queryBuilder: $this->projectRepository->getOneByUuidQueryBuilder($user, $projectUuid)
         );
 
         $result = [];
+        $keys = join('|', array_keys(BuildService::REPLACE_FUNCTIONS));
 
         foreach ($projectQueryBuilder->getQuery()->getResult() as $item) {
             foreach ($item->getResources() as $resource) {
                 if (
-                    preg_match_all('/__TCC__([A-Z_]+)+__/', $resource->getContent(), $matches) &&
+                    preg_match_all("/__({$keys})__([A-Z_]+)+__/", $resource->getContent(), $matches) &&
                     !empty($matches[0])
                 ) {
                     foreach ($matches[0] as $item) {
                         if (!isset($result[$item])) {
-                            $result[$item] = $resource->getId() ;
+                            $result[] = $item;
                         }
                     }
 
                 }
             }
         }
-        return $result;
+
+        return array_unique($result);
     }
 
     public function initForm(FormBuilder $formBuilder, array $templates): Form
     {
-
-        foreach ($templates as $template => $id) {
-            if (preg_match('/__([A-Z]+)__(\w+)__/', $template, $matches) && !empty($matches[2])) {
-                $label = s($matches[2])
-                    ->replaceMatches('/\W+|_+|\-+/', ' ')
-                    ->replaceMatches('/\s{2, }/', ' ')
-                    ->lower()
-                    ->toString()
-                ;
-                $formBuilder->add($template, TextType::class, [
-                    'label' => ucfirst($label)
-                ]);
-            }
+        $templates = $this->templateService->clearTemplates($templates);
+        foreach ($templates as $template => $val) {
+            $formBuilder->add($template);
         }
-
         return $formBuilder->getForm();
     }
 
 
+
+    public function removeDirs(Project $project): void
+    {
+        $fileSystem = new Filesystem();
+
+        $path1 = $this->buildService->getBuildPath() . DIRECTORY_SEPARATOR . $project->getUuid();
+        $path2 =  $this->buildService->getBuildArchivePath() . DIRECTORY_SEPARATOR . $project->getUuid() .'.zip';
+
+        if ($fileSystem->exists($path1)) {
+            $fileSystem->remove($path1);
+        }
+
+        if ($fileSystem->exists($path2)) {
+            $fileSystem->remove($path2);
+        }
+    }
 }

@@ -24,10 +24,7 @@ final class ResourceController extends AbstractController
         private EntityManagerInterface $entityManager,
         private ProjectService         $projectService,
         private ResourceService        $resourceService
-
-    )
-    {
-
+    ) {
     }
 
     #[Route(
@@ -44,13 +41,23 @@ final class ResourceController extends AbstractController
 
     ): Response {
 
-        $obj = $this->projectService->getProjectResourceByUUid($projectUuid, $resourceUuid);
+        $obj = $this->projectService->getProjectResourceByUUid($this->getUser(), $projectUuid, $resourceUuid);
         $project = $obj['project'] ?? null;
         $resource = $obj['resource'] ?? new Resource();
 
         if (!$project) {
             throw $this->createNotFoundException();
         }
+
+        if ($resource?->getType()?->value == 2 && $type === 'dir') {
+
+            $this->addFlash('danger', 'You can not create a dir inside a file');
+            return $this->redirectToRoute('app_project_edit', [
+                'projectUuid' => $projectUuid,
+                'resourceUuid' => $resourceUuid
+            ], Response::HTTP_SEE_OTHER);
+        }
+        $resource->setOwner($this->getUser());
 
         return $this->save(
             project: $project,
@@ -76,7 +83,7 @@ final class ResourceController extends AbstractController
     ]
     public function edit(string $projectUuid, string $resourceUuid, Request $request): Response
     {
-        $obj = $this->projectService->getProjectResourceByUUid($projectUuid, $resourceUuid);
+        $obj = $this->projectService->getProjectResourceByUUid($this->getUser(), $projectUuid, $resourceUuid);
         $project = $obj['project'] ?? null;
         $resource = $obj['resource'] ?? null;
 
@@ -101,7 +108,7 @@ final class ResourceController extends AbstractController
     ]
     public function move(string $projectUuid, string $resourceUuid, Request $request): Response
     {
-        $obj = $this->projectService->getProjectResourceByUUid($projectUuid, $resourceUuid);
+        $obj = $this->projectService->getProjectResourceByUUid($this->getUser(), $projectUuid, $resourceUuid);
         $project = $obj['project'] ?? null;
         $resource = $obj['resource'] ?? null;
 
@@ -145,10 +152,10 @@ final class ResourceController extends AbstractController
         ]);
     }
 
-    #[Route('/delete/{resourceUuid}', name: 'app_resource_delete', methods: ['GET'])]
+    #[Route('/delete/{projectUuid}/{resourceUuid}', name: 'app_resource_delete', methods: ['GET'])]
     public function delete(string $projectUuid, string $resourceUuid): Response
     {
-        $obj = $this->projectService->getProjectResourceByUuid($projectUuid, $resourceUuid);
+        $obj = $this->projectService->getProjectResourceByUuid($this->getUser(), $projectUuid, $resourceUuid);
 
         $project = $obj['project'] ?? null;
         $resource = $obj['resource'] ?? null;
@@ -178,11 +185,10 @@ final class ResourceController extends AbstractController
         ?Resource $resource = null,
         ?string   $type = null,
         ?Resource $parent = null
-    ): Response
-    {
+    ): Response {
 
         $resource?->setType(ResourceTypeEnum::setValue($type));
-        $resource?->setDeep($parent?->getDeep() + 1 ?? 0);
+
         $resource?->setParent($parent);
         $resource?->setProject($project);
 
@@ -191,17 +197,11 @@ final class ResourceController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $slugger = new AsciiSlugger();
-            $resource->setSlug($slugger->slug($resource->getName())->lower()->toString());
-            $path = '';
 
-            if ($resource->getType()->value === ResourceTypeEnum::Dir->value && $parent) {
-                $path = $parent->getPath() . '/' . $resource->getSlug();
-            }
 
-            $resource->setPath($path);
             $this->entityManager->persist($resource);
             $this->entityManager->flush();
+
             $this->addFlash('success', self::getResourceTypeAndName($resource) . ' has been saved.');
             $params = ['projectUuid' => $project->getUuid()];
             if ($parent) {
@@ -213,7 +213,7 @@ final class ResourceController extends AbstractController
             return $this->redirectToRoute('app_project_edit', $params, Response::HTTP_SEE_OTHER);
         }
 
-        return $this->render('resource/new.html.twig', [
+        return $this->render('resource/save.html.twig', [
             'resource' => $resource,
             'form' => $form,
             'project' => $project

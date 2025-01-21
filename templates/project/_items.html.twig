@@ -13,6 +13,7 @@
                 <td><a href="{{ path('app_project_edit', {projectUuid: project.uuid, resourceUuid: resource.uuid}) }}"> {{ resource.name }} </a> </td>
                 <td>{{ resource.type.name }}</td>
                 <td class="text-end">
+                    <a href="{{ path('app_upload', {projectUuid: project.uuid, resourceUuid: resource.uuid}) }}" class="btn btn-dark">Upload</a>
                     <a href="{{ path('app_resource_edit', {projectUuid: project.uuid, resourceUuid: resource.uuid}) }}" class="btn btn-dark">Edit</a>
                     <a href="{{ path('app_resource_move', {projectUuid: project.uuid, resourceUuid: resource.uuid}) }}" class="btn btn-dark">Move</a>
                     <a href="{{ path('app_resource_delete', {projectUuid: project.uuid, resourceUuid: resource.uuid}) }}" onclick="return confirm('Delete this directory?')" class="btn btn-danger">Delete</a>
@@ -34,12 +35,5 @@
             }) }}">Add file</a>
         </div>
     {% endif %}
-    <hr>
 
-    {% if resourceItem is not null and resourceItem.parent is not null %}
-
-        <a class="btn btn-dark" href="{{ path('app_project_edit', {projectUuid: project.uuid, resourceUuid: resourceItem.parent.uuid}) }}">back to {{ resourceItem.name }} list</a>
-    {% endif %}
-
-    <a class="btn btn-dark" href="{{ path('app_project_edit', {projectUuid: project.uuid}) }}">back to list </a>
 

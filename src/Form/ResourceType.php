@@ -21,7 +21,6 @@ class   ResourceType extends AbstractType
             ->addEventListener(FormEvents::PRE_SET_DATA, function (FormEvent $event) {
                 $form = $event->getForm();
                 $data = $event->getData();
-
                 if ($data->getType() == \App\Entity\Enum\ResourceType::File) {
                     $form->add('content', TextareaType::class, []);
                 }

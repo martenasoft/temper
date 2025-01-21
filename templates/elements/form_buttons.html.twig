@@ -1,5 +1,9 @@
 <div class="row">
     <div class="col-6">
+        {% if resourceItem is defined and resourceItem is not null and resourceItem.parent is not null %}
+            <a class="btn btn-dark" href="{{ path('app_project_edit', {projectUuid: project.uuid, resourceUuid: resourceItem.parent.uuid}) }}">back to {{ resourceItem.name }} list</a>
+        {% endif %}
+
         {% if back_uri is defined %}
             <a class="btn btn-dark" href="{{ back_uri }}">Back to list</a>
         {% endif %}

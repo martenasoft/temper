@@ -38,6 +38,7 @@ final class ProjectController extends AbstractController
     public function new(Request $request): Response
     {
         $project = new Project();
+        $project->setOwner($this->getUser());
         $form = $this->createForm(ProjectType::class, $project);
         $form->handleRequest($request);
 
@@ -60,37 +61,66 @@ final class ProjectController extends AbstractController
         ]);
     }
 
-    #[Route('/show/{projectUuid}/{resourceUuid}', defaults: ['resourceUuid' => null], name: 'app_project_show', methods: ['GET', 'POST'])]
+    #[Route(
+        '/show/{projectUuid}/{resourceUuid}',
+        name: 'app_project_show',
+        defaults: ['resourceUuid' => null],
+        methods: ['GET', 'POST'])
+    ]
     public function show(Request $request, string $projectUuid): Response
     {
-        $templates = $this->projectService->collectTemplates($projectUuid);
+        $templates = $this->projectService->collectTemplates($projectUuid, $this->getUser());
         $form = $this->projectService->initForm($this->createFormBuilder(), $templates);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
-            $result = $this->buildService->build($projectUUid, $templates, $data);
-            if (!empty($result[0]) && file_exists($result[0])) {
-                return new StreamedResponse(function () use ($result) {
-                    $outputStream = fopen('php://output', 'wb');
-                    $fileStream = fopen($result[0], 'rb');
-                    stream_copy_to_stream($fileStream, $outputStream);
-                    fclose($fileStream);
-                    fclose($outputStream);
-
-                    // Удаляем временный архив после передачи
-                    unlink($result[0]);
-                }, 200, [
-                    'Content-Type' => 'application/zip',
-                    'Content-Disposition' => 'attachment; filename="archive.zip"',
-                    'Content-Length' => filesize($result[0]),
-                ]);
-            }
-
+            $result = $this->buildService->build($this->getUser(), $projectUuid, $templates, $data);
+            $this->addFlash('success', 'Project successfully built.');
+            return $this->redirectToRoute(
+                'app_project_download', [
+                'projectUuid' => $projectUuid
+            ],
+                Response::HTTP_SEE_OTHER
+            );
         }
 
         return $this->render('project/show.html.twig', [
             'form' => $form->createView(),
+        ]);
+    }
+
+    #[Route(
+        '/download/{projectUuid}/{get}',
+        name: 'app_project_download',
+        defaults: ['get' => null],
+        methods: ['GET'])
+    ]
+    public function download(string $projectUuid, ?string $get = null): Response
+    {
+        $obj = $this->projectService->getProjectResourceByUuid($this->getUser(), $projectUuid);
+        $project = $obj['project'] ?? null;
+
+        $path = $this->buildService->getBuildArchivePath() . DIRECTORY_SEPARATOR . $projectUuid . '.zip';
+
+        if ($get !== null) {
+            return new StreamedResponse(function () use ($path) {
+                $outputStream = fopen('php://output', 'wb');
+                $fileStream = fopen($path, 'rb');
+                stream_copy_to_stream($fileStream, $outputStream);
+                fclose($fileStream);
+                fclose($outputStream);
+
+            }, 200, [
+                'Content-Type' => 'application/zip',
+                'Content-Disposition' => 'attachment; filename="archive.zip"',
+                'Content-Length' => filesize($path),
+            ]);
+        }
+
+        return $this->render('project/download.html.twig', [
+            'project' => $project,
+
         ]);
     }
 
@@ -106,7 +136,7 @@ final class ProjectController extends AbstractController
         ?string $resourceUuid = null,
     ): Response {
 
-        $obj = $this->projectService->getProjectResourceByUuid($projectUuid, $resourceUuid);
+        $obj = $this->projectService->getProjectResourceByUuid($this->getUser(), $projectUuid, $resourceUuid);
         $project = $obj['project'] ?? null;
         $resource = $obj['resource'] ?? null;
 
@@ -141,12 +171,14 @@ final class ProjectController extends AbstractController
     #[Route('/delete/{projectUuid}', name: 'app_project_delete', methods: ['GET'])]
     public function delete(string $projectUuid): Response
     {
-        $obj = $this->projectService->getProjectResourceByUuid($projectUuid);
+        $obj = $this->projectService->getProjectResourceByUuid($this->getUser(), $projectUuid);
         $project = $obj['project'] ?? null;
 
         if (!$project) {
             throw $this->createNotFoundException();
         }
+
+        $this->projectService->removeDirs($project);
         $this->entityManager->remove($project);
         $this->entityManager->flush();
         $this->addFlash('success', 'Project has been deleted.');
@@ -161,4 +193,5 @@ final class ProjectController extends AbstractController
             'items' => $items
         ]);
     }
+
 }

@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Entity\Project;
+use App\Entity\Resource;
 use App\Repository\ResourceRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -46,4 +47,5 @@ class ResourceService
             $this->updatePath($project);
         }
     }
+
 }

@@ -9,6 +9,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\Guid\Guid;
+use Symfony\Component\String\Slugger\AsciiSlugger;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
@@ -18,10 +19,6 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
     uniqueConstraints: [
         new ORM\UniqueConstraint(name: 'unique_project_slug_path', columns: ['project_id', 'slug', 'path'])
     ]
-)]
-
-#[UniqueEntity(
-    fields: ['project', 'slug', 'path'],
 )]
 #[ORM\HasLifecycleCallbacks]
 class Resource
@@ -34,7 +31,7 @@ class Resource
 
     #[ORM\Column(length: 255)]
     #[Assert\Regex(
-        pattern: '/^[a-zA-Z_][a-zA-Z0-9_\.]*$/',
+        pattern: '/^[a-zA-Z(_+)][a-zA-Z0-9(_+)\.]*$/',
         message: 'The class name can only contain letters, numbers, and underscores, and must not start with a number.'
     )]
     private ?string $name = null;
@@ -68,6 +65,9 @@ class Resource
 
     #[ORM\Column(type: Types::GUID)]
     private ?string $uuid = null;
+
+    #[ORM\ManyToOne(inversedBy: 'resources')]
+    private ?User $owner = null;
 
     public function __construct()
     {
@@ -218,10 +218,33 @@ class Resource
     }
 
     #[ORM\PrePersist]
-    public function autoSaveUuid(): void
+    public function autoSave(): void
     {
-        if (null === $this->uuid) {
+        if ($this->uuid === null) {
             $this->uuid = Guid::uuid4();
         }
+
+        $slugger = new AsciiSlugger();
+        $this->slug = $slugger->slug($this->name);
+
+        if ($this->deep === null) {
+            $this->deep = 0;
+        }
+
+        if ($this->path === null) {
+            $this->path = '';
+        }
+    }
+
+    public function getOwner(): ?User
+    {
+        return $this->owner;
+    }
+
+    public function setOwner(?User $owner): static
+    {
+        $this->owner = $owner;
+
+        return $this;
     }
 }

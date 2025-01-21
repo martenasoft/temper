@@ -54,7 +54,11 @@ Encore
     })
 
     // enables Sass/SCSS support
-    .enableSassLoader()
+    .enableSassLoader((options) => {
+        options.sassOptions = {
+            quietDeps: true, // Подавляет предупреждения из зависимостей
+        };
+    })
 
     // uncomment if you use TypeScript
     //.enableTypeScriptLoader()
@@ -68,6 +72,7 @@ Encore
 
     // uncomment if you're having problems with a jQuery plugin
     //.autoProvidejQuery()
+
 ;
 
 module.exports = Encore.getWebpackConfig();

@@ -1,0 +1,42 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New Resource{% endblock %}
+{% block h1 %}New Resource{% endblock %}
+
+{% block body %}
+    <div class="alert alert-light">
+        {% for key, value in constant('\\App\\Service\\BuildService::TITLES') %}
+            <p>{{ value }}</p>
+        {% endfor %}
+    </div>
+    <div id="editor" style="height: 0"></div>
+    {{ include('resource/_form.html.twig', {project: project, resourceItem: resource}) }}
+
+
+
+    {% set fileType = '.' in form.vars.value.name  ? form.vars.value.name | split('.' ) | last : 'php' %}
+
+
+    <script>
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.40.0/min/vs' } });
+        require(['vs/editor/editor.main'], function () {
+
+            const textarea = document.getElementById('resource_content');
+            const editorContainer = document.createElement('div');
+            editorContainer.style.height = '400px'; // Укажите высоту редактора
+            editorContainer.style.width = '100%'; // Укажите высоту редактора
+            textarea.style.display = 'none'; // Скрываем textarea
+            textarea.parentNode.insertBefore(editorContainer, textarea);
+
+            const editor = monaco.editor.create(editorContainer, {
+                value: textarea.value,
+                language: '{{ fileType }}',
+                theme: 'vs-dark',
+            });
+
+            editor.onDidChangeModelContent(() => {
+                textarea.value = editor.getValue();
+            });
+        });
+    </script>
+{% endblock %}

@@ -37,6 +37,9 @@ class Project
     #[ORM\Column(type: Types::GUID)]
     private ?string $uuid = null;
 
+    #[ORM\ManyToOne(inversedBy: 'projects')]
+    private ?User $owner = null;
+
     public function __construct()
     {
         $this->resources = new ArrayCollection();
@@ -120,5 +123,17 @@ class Project
         if (null === $this->uuid) {
             $this->uuid = Guid::uuid4();
         }
+    }
+
+    public function getOwner(): ?User
+    {
+        return $this->owner;
+    }
+
+    public function setOwner(?User $owner): static
+    {
+        $this->owner = $owner;
+
+        return $this;
     }
 }

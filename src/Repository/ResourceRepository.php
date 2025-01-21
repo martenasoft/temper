@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Dir;
 use App\Entity\Project;
 use App\Entity\Resource;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -40,12 +41,15 @@ class ResourceRepository extends ServiceEntityRepository
         return $queryBuilder;
     }
 
-    public function getOneByUuidQueryBuilder(string $uuid): ?QueryBuilder
+    public function getOneByUuidQueryBuilder(User $user, string $uuid): ?QueryBuilder
     {
         $queryBuilder = $this->createQueryBuilder(self::ALIAS);
         $queryBuilder
             ->andWhere(self::ALIAS . '.uuid=:uuid')
-            ->setParameter('uuid', $uuid);
+            ->andWhere(self::ALIAS . '.owner=:user')
+            ->setParameter('uuid', $uuid)
+            ->setParameter('user', $user)
+        ;
 
         return $queryBuilder;
     }
@@ -157,5 +161,23 @@ class ResourceRepository extends ServiceEntityRepository
             ->addOrderBy(self::ALIAS.'.id', 'ASC')
         ;
         return $queryBuilder;
+    }
+
+    public function getResourceByProjectUuidAndNameQueryBuilder(
+        User $user,
+        string $projectUuid,
+        string $resourceName
+    ): ?QueryBuilder {
+        return $this
+            ->createQueryBuilder(self::ALIAS)
+            ->innerJoin(self::ALIAS . '.project', ProjectRepository::ALIAS)
+            ->andWhere(self::ALIAS . '.name LIKE :name')
+            ->andWhere(self::ALIAS . '.owner = :user')
+            ->andWhere(ProjectRepository::ALIAS. '.uuid = :projectUuid')
+            ->andWhere(self::ALIAS . '.name LIKE :name')
+            ->setParameter('projectUuid', $projectUuid)
+            ->setParameter('name', $resourceName)
+            ->setParameter('user', $user)
+            ;
     }
 }
