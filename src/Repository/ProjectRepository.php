@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Project;
+use App\Entity\Resource;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
@@ -19,7 +20,7 @@ class ProjectRepository extends ServiceEntityRepository
         parent::__construct($registry, Project::class);
     }
 
-    public function getOneByUuidQueryBuilder(User $user, string $projectUuid): ?QueryBuilder
+    public function getOneByUuidQueryBuilder(User $user, string $projectUuid, ?Resource $resource = null): ?QueryBuilder
     {
 
         $queryBuilder = $this->createQueryBuilder(self::ALIAS);
@@ -28,9 +29,22 @@ class ProjectRepository extends ServiceEntityRepository
             ->addSelect(ResourceRepository::ALIAS)
             ->andWhere(self::ALIAS . '.uuid=:uuid')
             ->andWhere(self::ALIAS . '.owner=:user')
+
+
             ->setParameter('uuid', $projectUuid)
             ->setParameter('user', $user)
+
         ;
+
+        if (!$resource) {
+            $queryBuilder->andWhere(ResourceRepository::ALIAS . '.parent IS NULL');
+        } else {
+            $queryBuilder
+                ->andWhere(ResourceRepository::ALIAS . '.parent=:parentResource')
+                ->setParameter('parentResource', $resource)
+            ;
+        }
+
 
 
         return $queryBuilder;

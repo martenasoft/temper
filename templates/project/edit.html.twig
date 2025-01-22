@@ -11,6 +11,7 @@
             projectUuid: project.uuid,
             resourceUuid: resourceItem.uuid is not defined ? null : resourceItem.uuid
         }) }}">Upload</a>
+
         <a class="btn btn-lg btn-outline-dark" href="{{ path('app_find_replace', {
             projectUuid: project.uuid,
             resourceUuid: resourceItem.uuid is not defined ? null : resourceItem.uuid
@@ -24,11 +25,17 @@
             resourceUuid: resourceItem.uuid is not defined ? null : resourceItem.uuid,
             type: 'file'
         }) }}">Add file</a>
+        <a class="btn btn-lg btn-outline-dark" href="{{ path('app_resource_copy', {
+            projectUuid: project.uuid,
+            resourceUuid: resourceItem.uuid is not defined ? null : resourceItem.uuid
+        }) }}">Copy</a>
     {% endif %}
 
     <a class="btn btn-lg btn-dark" href="{{ path('app_project_edit', {projectUuid: project.uuid}) }}">Edit</a>
     <a class="btn btn-lg btn-danger" onclick="return confirm('Delete project?')"
        href="{{ path('app_project_delete', {projectUuid: project.uuid}) }}">Delete</a>
+
+
 {% endblock %}
 
 {% block body %}

@@ -103,7 +103,6 @@ final class ResourceController extends AbstractController
     #[Route(
         '/move/{projectUuid}/{resourceUuid}',
         name: 'app_resource_move',
-        defaults: ['parent' => null],
         methods: ['GET', 'POST'])
     ]
     public function move(string $projectUuid, string $resourceUuid, Request $request): Response
@@ -152,15 +151,66 @@ final class ResourceController extends AbstractController
         ]);
     }
 
+    #[Route(
+        '/copy/{projectUuid}/{resourceUuid}',
+        name: 'app_resource_copy',
+        defaults: ['resourceUuid' => null],
+        methods: ['GET', 'POST'])
+    ]
+    public function copy(Request $request, string $projectUuid, ?string $resourceUuid = null): Response
+    {
+        $obj = $this->projectService->getProjectResourceByUUid($this->getUser(), $projectUuid, $resourceUuid);
+        $project = $obj['project'] ?? null;
+        $resource = $obj['resource'] ?? null;
+
+        if (!$project) {
+            throw $this->createNotFoundException();
+        }
+        $tree = $this->resourceService->getTree(user: $this->getUser());
+
+        $formBuilder = $this->createFormBuilder();
+        $choices = array_combine(array_column($tree, 'name'), array_column($tree, 'uuid'));
+
+        $formBuilder->add('Dir', ChoiceType::class, [
+            'choices' => $choices,
+            'expanded' => true,
+            'multiple' => true,
+            'label' => 'Select an catalog',
+        ]);
+
+
+        $form = $formBuilder->getForm();
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $data = $form->getData();
+            $this->resourceService->copy($project, $resource, $data['Dir']);
+            $params = ['projectUuid' => $project->getUuid()];
+            if ($resourceUuid) {
+                $params['resourceUuid'] = $resourceUuid;
+            }
+
+            $this->resourceService->updatePath($project);
+
+            return $this->redirectToRoute('app_project_edit', $params, Response::HTTP_SEE_OTHER);
+        }
+
+        return $this->render('resource/copy.html.twig', [
+            'project' => $project,
+            'resource' => $resource,
+            'tree' => $tree,
+            'form' => $form
+        ]);
+    }
+
     #[Route('/delete/{projectUuid}/{resourceUuid}', name: 'app_resource_delete', methods: ['GET'])]
     public function delete(string $projectUuid, string $resourceUuid): Response
     {
         $obj = $this->projectService->getProjectResourceByUuid($this->getUser(), $projectUuid, $resourceUuid);
 
-        $project = $obj['project'] ?? null;
         $resource = $obj['resource'] ?? null;
 
-        if (!$project || !$resource) {
+        if ( !$resource) {
             throw $this->createNotFoundException();
         }
 
@@ -197,8 +247,6 @@ final class ResourceController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-
-
             $this->entityManager->persist($resource);
             $this->entityManager->flush();
 

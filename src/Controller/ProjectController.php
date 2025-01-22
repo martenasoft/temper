@@ -160,11 +160,13 @@ final class ProjectController extends AbstractController
             );
         }
 
+
+
         return $this->render('project/edit.html.twig', [
             'project' => $project,
             'form' => $form,
             'resourceItem' => $resource,
-            'resources' => $this->projectService->getResources($project, $resource)
+            'resources' => $project->getResources(),
         ]);
     }
 

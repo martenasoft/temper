@@ -103,14 +103,34 @@ class ProjectService
         return $this->projectDir . '/' . $userPath . '/' . $slugger->slug($name);
     }
 
-    public function getProjectResourceByUuid(User $user, string $projectUuid, ?string $resourceUuid = null): array
+    public function getProjectResourceByUuid(
+        User $user,
+        string $projectUuid,
+        ?string $resourceUuid = null
+    ): array
     {
-        $project = $this->projectRepository->getOneByUuidQueryBuilder($user, $projectUuid)->getQuery()->getOneOrNullResult();
         $resource = null;
 
         if ($resourceUuid) {
-            $resource = $this->resourceRepository->getOneByUuidQueryBuilder($user, $resourceUuid)->getQuery()->getOneOrNullResult();
+            $resource = $this
+                ->resourceRepository
+                ->getOneByUuidQueryBuilder($user, $resourceUuid)
+                ->getQuery()
+                ->getOneOrNullResult()
+            ;
         }
+
+
+        $project = $this
+            ->projectRepository
+            ->getOneByUuidQueryBuilder($user, $projectUuid, $resource)
+            ->getQuery()
+            ->getOneOrNullResult()
+        ;
+
+      //  dd($resourceUuid);
+
+
 
         return [
             'project' => $project,
@@ -164,8 +184,6 @@ class ProjectService
         }
         return $formBuilder->getForm();
     }
-
-
 
     public function removeDirs(Project $project): void
     {

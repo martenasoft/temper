@@ -6,13 +6,119 @@
 {% block body %}
     {{ form_start(form) }}
         <div class="row">
-            <div class="col-8">
-                {{ form_widget(form.word) }}
+            <div class="col-4">
+                {{ form_row(form.word) }}
             </div>
             <div class="col-4">
-                <button type="submit" class="btn btn-dark">Find</button>
+                {{ form_row(form.replace) }}
             </div>
-        </div>
+            <div class="col-4 pt-4">
+                <button type="submit" class="btn btn-lg btn-dark">go</button>
+            </div>
 
+
+            {% if result is not empty %}
+
+                    <table class="table">
+                    <thead>
+                    <tr>
+                        <th><input type="checkbox"></th>
+                        <th>Found</th>
+                        <th>Replace to</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for path,items in result %}
+                        <tr>
+                            <td><input type="checkbox" name="ch[path][{{ path }}]" checked></td>
+                            <td>{{ path }}</td>
+                            <td>
+                                <input
+                                        class="form-control"
+                                        type="text"
+                                        name="replace[path][{{ path }}][{{ items.uuid }}]"
+                                        value="{{ items.pathReplace }}"
+                                >
+
+                            </td>
+                        </tr>
+                        {% if items.name != items.nameReplace %}
+                        <tr>
+                            <td><input type="checkbox" name="ch[path][{{ path }}]" checked></td>
+                            <td>{{ items.name }}</td>
+                            <td>
+                                <input
+                                        class="form-control"
+                                        type="text"
+                                        name="replace[name][{{ path }}][{{ items.uuid }}]"
+                                        value="{{ items.nameReplace }}"
+                                >
+
+                            </td>
+                        </tr>
+                        {% endif %}
+
+                        {% if items.items[0] is defined %}
+
+
+                            <tr>
+                                <td><input type="checkbox" name="ch[file][{{ path }}]" checked></td>
+                                <td>
+                                    <code>
+                                        <table>
+                                            {% if items.items[0] is defined and items.items[0].lineNumber > 1 %}
+                                                <tr>
+                                                    <td class="bg-dark ps-1 pe-1">1</td>
+                                                    <td class="ps-3"> ... </td>
+                                                </tr>
+                                            {% endif %}
+                                            {% for contentItem in items.items %}
+
+
+                                                <tr>
+                                                    <td class="bg-dark ps-1 pe-1">{{ contentItem.lineNumber }}</td>
+                                                    <td class="ps-3">{{ contentItem.line }} </td>
+                                                </tr>
+
+                                            {% endfor %}
+                                        </table>
+
+                                    </code>
+
+
+                                </td>
+                                <td>
+
+                                    <table class="w-100">
+                                        {% for contentItem in items.items  %}
+                                            <tr>
+                                                <td class="ps-3">
+                                                    <input
+                                                            class="form-control"
+                                                            type="text"
+                                                            name="replace[file][{{ path }}][{{ items.uuid }}][{{ contentItem.lineNumber }}]"
+                                                            value="{{ contentItem.lineReplace }}"
+                                                    >
+                                                </td>
+                                            </tr>
+
+                                        {% endfor %}
+                                    </table>
+
+                                </td>
+                            </tr>
+
+                        {% endif %}
+                    {% endfor %}
+                    </tbody>
+                </table>
+                    <hr>
+                    <button class="btn btn-dark btn-lg">Save</button>
+
+            {% endif %}
+
+        </div>
     {{ form_end(form) }}
+
+
 {% endblock %}

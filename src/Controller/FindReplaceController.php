@@ -24,19 +24,24 @@ class FindReplaceController extends AbstractController
 
         $formBuilder = $this->createFormBuilder();
         $formBuilder->add('word');
+        $formBuilder->add('replace');
 
         $form = $formBuilder->getForm();
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $data = $form->getData();
+        $result = [];
 
-            dd($data);
+        if ($form->isSubmitted() && $form->isValid()) {
+
+            $this->findService->save($request->request->all());
+            $data = $form->getData();
+            $result = $this->findService->findByWord($this->getUser(), $projectUuid, $data['word'], $data['replace']);
         }
 
         return $this->render('find_replace/index.html.twig', [
             'form' => $form->createView(),
-            'project' => $project
+            'project' => $project,
+            'result' => $result
         ]);
     }
 }

@@ -10,6 +10,7 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 use App\Entity\Enum\ResourceType as EnumResourceType;
+use function Symfony\Component\String\s;
 
 /**
  * @extends ServiceEntityRepository<Resource>
@@ -25,7 +26,6 @@ class ResourceRepository extends ServiceEntityRepository
 
     public function getItemsQueryBuilder(Project $project, ?Resource $resource = null): QueryBuilder
     {
-
         $queryBuilder = $this->createQueryBuilder(self::ALIAS);
         if ($resource) {
             $queryBuilder
@@ -103,12 +103,20 @@ class ResourceRepository extends ServiceEntityRepository
 
     }
 
-    public function getRecursive(Project $project, ?string $type = null)
+    public function getRecursive(?Project $project, ?string $type = null, ?User $user = null)
     {
-        $typeQuery = '';
+        $query = '';
+
+        if (!empty($project)) {
+            $query = " AND project_id = :project_id ";
+        }
 
         if (!empty($type)) {
-            $typeQuery = " AND r.type = :type ";
+            $query .= " AND r.type = :type ";
+        }
+
+        if (!empty($user)) {
+            $query .= " AND r.owner_id = :owner ";
         }
 
         $sql = "WITH RECURSIVE resource_hierarchy AS (
@@ -121,7 +129,7 @@ class ResourceRepository extends ServiceEntityRepository
                         0 AS depth 
                     FROM resource r
                     INNER JOIN public.project p ON r.project_id = p.id
-                    WHERE parent_id IS NULL AND project_id = :project_id $typeQuery
+                    WHERE parent_id IS NULL  $query
                     UNION ALL
                     SELECT
                         r.id,
@@ -139,12 +147,17 @@ class ResourceRepository extends ServiceEntityRepository
         $conn = $this->getEntityManager()->getConnection();
         $stmt = $conn->prepare($sql);
 
-        $params = [
-            'project_id' => $project->getId(),
-        ];
 
         if (!empty($type)) {
             $params['type'] = $type;
+        }
+
+        if (!empty($project)) {
+            $params['project_id'] = $project->getId();
+        }
+
+        if (!empty($user)) {
+            $params['owner'] = $user->getId();
         }
 
         $res = $stmt->executeQuery($params);
@@ -179,5 +192,35 @@ class ResourceRepository extends ServiceEntityRepository
             ->setParameter('name', $resourceName)
             ->setParameter('user', $user)
             ;
+    }
+
+    public function findByWordQueryBuilder(
+        string $word,
+        ?string $camelCase = null,
+        ?string $snackCase = null,
+        ?QueryBuilder $queryBuilder = null
+    ): QueryBuilder {
+        $queryBuilder = $queryBuilder ?? $this->createQueryBuilder(self::ALIAS);
+
+        $orX = $queryBuilder->expr()->orX();
+        $orX->add($queryBuilder->expr()->like(self::ALIAS.'.name', ':word'));
+        $orX->add($queryBuilder->expr()->like(self::ALIAS.'.content', ':word'));
+
+        if (!empty($camelCase)) {
+            $orX->add($queryBuilder->expr()->like(self::ALIAS.'.name', ':cc'));
+            $orX->add($queryBuilder->expr()->like(self::ALIAS.'.content', ':cc'));
+            $queryBuilder->setParameter('cc', '%' . $camelCase . '%');
+        }
+
+        if (!empty($snackCase)) {
+            $orX->add($queryBuilder->expr()->like(self::ALIAS.'.name', ':sc'));
+            $orX->add($queryBuilder->expr()->like(self::ALIAS.'.content', ':sc'));
+            $queryBuilder->setParameter('sc', '%' . $snackCase . '%');
+        }
+
+        $queryBuilder->setParameter('word', '%'.$word.'%');
+
+        $queryBuilder->andWhere($orX);
+        return $queryBuilder;
     }
 }
