@@ -22,7 +22,7 @@
                     <table class="table">
                     <thead>
                     <tr>
-                        <th><input type="checkbox"></th>
+                        <th></th>
                         <th></th>
                         <th>Found</th>
                         <th>Replace to</th>
@@ -30,6 +30,9 @@
                     </thead>
                     <tbody>
                     {% for path,items in result %}
+
+                        {% if items.pathReplace is not null %}
+
                         <tr>
                             <td><input type="checkbox" name="ch[path][{{ path }}]" checked></td>
                             <td>Path</td>
@@ -44,7 +47,9 @@
 
                             </td>
                         </tr>
-                        {% if items.name != items.nameReplace %}
+                        {% endif %}
+
+                        {% if items.name != items.nameReplace and items.nameReplace is not null %}
                         <tr>
                             <td><input type="checkbox" name="ch[path][{{ path }}]" checked></td>
                             <td>Name</td>

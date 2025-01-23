@@ -56,7 +56,7 @@ class UploadController extends AbstractController
                 return $this->redirectToRoute('app_upload', ['projectUuid' => $projectUuid, 'resourceUuid' => $resourceUuid]);
             }
 
-            return $this->redirectToRoute('app_project_edit', ['projectUuid' => $projectUuid, 'resourceUuid' => $resourceUuid]);
+            return $this->redirectToRoute('app_project_item', ['projectUuid' => $projectUuid, 'resourceUuid' => $resourceUuid]);
         }
 
         return $this->render('upload/index.html.twig', [

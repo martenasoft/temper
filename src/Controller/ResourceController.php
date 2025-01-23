@@ -52,7 +52,7 @@ final class ResourceController extends AbstractController
         if ($resource?->getType()?->value == 2 && $type === 'dir') {
 
             $this->addFlash('danger', 'You can not create a dir inside a file');
-            return $this->redirectToRoute('app_project_edit', [
+            return $this->redirectToRoute('app_project_item', [
                 'projectUuid' => $projectUuid,
                 'resourceUuid' => $resourceUuid
             ], Response::HTTP_SEE_OTHER);
@@ -83,7 +83,7 @@ final class ResourceController extends AbstractController
     ]
     public function edit(string $projectUuid, string $resourceUuid, Request $request): Response
     {
-        $obj = $this->projectService->getProjectResourceByUUid($this->getUser(), $projectUuid, $resourceUuid, false);
+        $obj = $this->projectService->getProjectResourceByUUid($this->getUser(), $projectUuid, $resourceUuid);
         $project = $obj['project'] ?? null;
         $resource = $obj['resource'] ?? null;
 
@@ -143,7 +143,7 @@ final class ResourceController extends AbstractController
 
             $this->resourceService->updatePath($project);
 
-            return $this->redirectToRoute('app_project_edit', $params, Response::HTTP_SEE_OTHER);
+            return $this->redirectToRoute('app_project_item', $params, Response::HTTP_SEE_OTHER);
         }
 
         return $this->render('resource/move.html.twig', [
@@ -195,7 +195,7 @@ final class ResourceController extends AbstractController
 
             $this->resourceService->updatePath($project);
 
-            return $this->redirectToRoute('app_project_edit', $params, Response::HTTP_SEE_OTHER);
+            return $this->redirectToRoute('app_project_item', $params, Response::HTTP_SEE_OTHER);
         }
 
         return $this->render('resource/copy.html.twig', [
@@ -225,7 +225,7 @@ final class ResourceController extends AbstractController
         );
 
         return $this->redirectToRoute(
-            'app_project_edit', [
+            'app_project_item', [
             'projectUuid' => $projectUuid
         ],
             Response::HTTP_SEE_OTHER
@@ -261,7 +261,7 @@ final class ResourceController extends AbstractController
 
             $this->resourceService->updatePath($project);
 
-            return $this->redirectToRoute('app_project_edit', $params, Response::HTTP_SEE_OTHER);
+            return $this->redirectToRoute('app_project_item', $params, Response::HTTP_SEE_OTHER);
         }
 
         return $this->render('resource/save.html.twig', [

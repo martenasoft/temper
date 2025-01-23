@@ -7,13 +7,15 @@
     <div class="col-6">
     </div>
 
+    {% if form.content is defined %}
     <div class="col-12">
         {{ form_row(form.content) }}
     </div>
+    {% endif %}
 
     <div class="col-12">
         <hr>
-        {{ include('elements/form_buttons.html.twig', {back_uri: path('app_project_edit', {projectUuid: project.uuid})}) }}
+        {{ include('elements/form_buttons.html.twig', {back_uri: path('app_project_item', {projectUuid: project.uuid})}) }}
 
     </div>
 

@@ -30,8 +30,6 @@ class FindReplaceController extends AbstractController
         $result = [];
 
         if ($form->isSubmitted() && $form->isValid()) {
-
-
             $data = $form->getData();
             $result = $this->findService->findByWord($this->getUser(), $projectUuid, $data['word'], $data['replace']);
         }

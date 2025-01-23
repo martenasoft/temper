@@ -73,25 +73,41 @@ class FindService
                 }
             }
 
-            $pathItemReplace = $item->getPath();
-            $pathItemReplace = str_replace($word, $replace, $pathItemReplace);
-            $pathItemReplace = str_replace($snackCase, $replace, $pathItemReplace);
-            $pathItemReplace = str_replace($camelCase, $replace, $pathItemReplace);
-
-            $nameItemReplace = $item->getName();
-
-            $nameItemReplace = str_replace($word, $replace, $nameItemReplace);
-            $nameItemReplace = str_replace($snackCase, $replace, $nameItemReplace);
-            $nameItemReplace = str_replace($camelCase, $replace, $nameItemReplace);
-
-
-            $result[$item->getPath()] = [
+            $res = [
                 'name' => $item->getName(),
-                'nameReplace' => $nameItemReplace,
+                'nameReplace' => null,
                 'uuid' => $item->getUuid(),
-                'pathReplace' => $pathItemReplace,
+                'pathReplace' => null,
                 'items' => $items_
             ];
+
+            $pathItemReplace = $item->getPath();
+
+            if (
+                stripos($pathItemReplace, $word) !== false ||
+                stripos($pathItemReplace, $snackCase) !== false ||
+                stripos($pathItemReplace, $camelCase) !== false
+            ) {
+                $pathItemReplace = str_replace($word, $replace, $pathItemReplace);
+                $pathItemReplace = str_replace($snackCase, $replace, $pathItemReplace);
+                $pathItemReplace = str_replace($camelCase, $replace, $pathItemReplace);
+
+                $res['pathReplace'] = $pathItemReplace;
+            }
+
+            $nameItemReplace = $item->getName();
+            if (
+                stripos($nameItemReplace, $word) !== false ||
+                stripos($nameItemReplace, $snackCase) !== false ||
+                stripos($nameItemReplace, $camelCase) !== false
+            ) {
+                $nameItemReplace = str_replace($word, $replace, $nameItemReplace);
+                $nameItemReplace = str_replace($snackCase, $replace, $nameItemReplace);
+                $nameItemReplace = str_replace($camelCase, $replace, $nameItemReplace);
+
+                $res['nameReplace'] = $nameItemReplace;
+            }
+            $result[$item->getPath()] = $res;
         }
 
         return $result;
@@ -101,8 +117,6 @@ class FindService
     {
         $ch = $postData['ch'] ?? [];
         $replace = $postData['replace'] ?? [];
-
-
 
         foreach ($ch['path'] ?? [] as $path => $val) {
 

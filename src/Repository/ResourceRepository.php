@@ -205,16 +205,19 @@ class ResourceRepository extends ServiceEntityRepository
         $orX = $queryBuilder->expr()->orX();
         $orX->add($queryBuilder->expr()->like(self::ALIAS.'.name', ':word'));
         $orX->add($queryBuilder->expr()->like(self::ALIAS.'.content', ':word'));
+        $orX->add($queryBuilder->expr()->like(self::ALIAS.'.path', ':word'));
 
         if (!empty($camelCase)) {
             $orX->add($queryBuilder->expr()->like(self::ALIAS.'.name', ':cc'));
             $orX->add($queryBuilder->expr()->like(self::ALIAS.'.content', ':cc'));
+            $orX->add($queryBuilder->expr()->like(self::ALIAS.'.path', ':cc'));
             $queryBuilder->setParameter('cc', '%' . $camelCase . '%');
         }
 
         if (!empty($snackCase)) {
             $orX->add($queryBuilder->expr()->like(self::ALIAS.'.name', ':sc'));
             $orX->add($queryBuilder->expr()->like(self::ALIAS.'.content', ':sc'));
+            $orX->add($queryBuilder->expr()->like(self::ALIAS.'.path', ':sc'));
             $queryBuilder->setParameter('sc', '%' . $snackCase . '%');
         }
 
