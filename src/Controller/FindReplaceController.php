@@ -19,8 +19,6 @@ class FindReplaceController extends AbstractController
     #[Route('/find/replace/{projectUuid}', name: 'app_find_replace', methods: ['GET', 'POST'])]
     public function index(Request $request, string $projectUuid): Response
     {
-        $obj = $this->projectService->getProjectResourceByUUid($this->getUser(), $projectUuid);
-        $project = $obj['project'] ?? null;
 
         $formBuilder = $this->createFormBuilder();
         $formBuilder->add('word');
@@ -33,15 +31,23 @@ class FindReplaceController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
 
-            $this->findService->save($request->request->all());
+
             $data = $form->getData();
             $result = $this->findService->findByWord($this->getUser(), $projectUuid, $data['word'], $data['replace']);
         }
 
         return $this->render('find_replace/index.html.twig', [
             'form' => $form->createView(),
-            'project' => $project,
+            'projectUuid' => $projectUuid,
             'result' => $result
         ]);
+    }
+
+    #[Route('/find/save/{projectUuid}', name: 'app_find_save', methods: ['POST'])]
+    public function save(Request $request, string $projectUuid): Response
+    {
+        $this->findService->save($request->request->all());
+        $this->addFlash('success', 'Values has been replaced.');
+        return $this->redirectToRoute('app_find_replace', ['projectUuid' => $projectUuid]);
     }
 }

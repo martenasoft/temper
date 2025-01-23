@@ -37,11 +37,12 @@ class FindService
                      ->getOneOrNullResult()
                      ?->getResources() ?? [] as $item) {
 
+            $items_ = [];
             if (!empty($item->getContent())) {
                 $file = explode("\n", $item->getContent());
                 if (!empty($file)) {
                     $lineNumber = 1;
-                    $items_ = [];
+
                     foreach ($file as $fileItem) {
 
                         if (
@@ -69,29 +70,28 @@ class FindService
 
                         $lineNumber++;
                     }
-
-
-                    $pathItemReplace = $item->getPath();
-                    $pathItemReplace = str_replace($word, $replace, $pathItemReplace);
-                    $pathItemReplace = str_replace($snackCase, $replace, $pathItemReplace);
-                    $pathItemReplace = str_replace($camelCase, $replace, $pathItemReplace);
-
-                    $nameItemReplace = $item->getName();
-
-                    $nameItemReplace = str_replace($word, $replace, $nameItemReplace);
-                    $nameItemReplace = str_replace($snackCase, $replace, $nameItemReplace);
-                    $nameItemReplace = str_replace($camelCase, $replace, $nameItemReplace);
-
-
-                    $result[$item->getPath()] = [
-                        'name' => $item->getName(),
-                        'nameReplace' => $nameItemReplace,
-                        'uuid' => $item->getUuid(),
-                        'pathReplace' => $pathItemReplace,
-                        'items' => $items_
-                    ];
                 }
             }
+
+            $pathItemReplace = $item->getPath();
+            $pathItemReplace = str_replace($word, $replace, $pathItemReplace);
+            $pathItemReplace = str_replace($snackCase, $replace, $pathItemReplace);
+            $pathItemReplace = str_replace($camelCase, $replace, $pathItemReplace);
+
+            $nameItemReplace = $item->getName();
+
+            $nameItemReplace = str_replace($word, $replace, $nameItemReplace);
+            $nameItemReplace = str_replace($snackCase, $replace, $nameItemReplace);
+            $nameItemReplace = str_replace($camelCase, $replace, $nameItemReplace);
+
+
+            $result[$item->getPath()] = [
+                'name' => $item->getName(),
+                'nameReplace' => $nameItemReplace,
+                'uuid' => $item->getUuid(),
+                'pathReplace' => $pathItemReplace,
+                'items' => $items_
+            ];
         }
 
         return $result;

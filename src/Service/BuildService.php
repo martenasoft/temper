@@ -34,18 +34,18 @@ class BuildService
     private string $buildPath = '';
     private string $buildArchivePath = '';
 
+    private ?Project $project = null;
+
     public function __construct(
         private KernelInterface $kernel,
         private ProjectRepository $projectRepository,
         private ResourceRepository $resourceRepository,
+
         private TemplateService $templateService
     ) {
         $this->buildPath = $this->kernel->getProjectDir() . '/' . self::BUILD_PATH;
         $this->buildArchivePath  = $this->kernel->getProjectDir() . '/' . self::BUILD_ARCHIVE_PATH;
     }
-
-
-
     public function getBuildPath(): string
     {
         return $this->buildPath;
@@ -56,22 +56,24 @@ class BuildService
         return $this->buildArchivePath;
     }
 
-    public function build(User $user, string $projectUuid, array $templates, array $data): array
+    public function build(User $user, string $projectUuid, array $templates, array $data, ?Project $project = null): array
     {
-        $projects = $this
+        $project = $project ?? $this
             ->projectRepository
-            ->getOneByUuidQueryBuilder($user, $projectUuid)->getQuery()->getResult();
+            ->getOneByUuidQueryBuilder($user, $projectUuid)
+            ->getQuery()
+            ->getOneOrNullResult();
 
-        if (empty($projects)) {
+        if (empty($project)) {
             throw new \RuntimeException('Project not found');
         }
+
 
         $buildPath = $this->buildPath . DIRECTORY_SEPARATOR . $projectUuid;
 
         if (!file_exists($buildPath)) {
             mkdir($buildPath, 0777, true);
         }
-
 
         $cleaned = $this->templateService->clearTemplates($templates);
         $dataS = [];
@@ -87,16 +89,9 @@ class BuildService
 
         $result = [];
 
-        foreach ($projects as $project) {
-            $resources = $project->getResources();
-            if (!$resources) {
-                continue;
-            }
-
-            $this->saveResources($project, $resources, $dataS);
-            $result[] = $this->archive($project);
-        }
-
+        $resources = $project->getResources();
+        $this->saveResources($project, $resources, $dataS);
+        $result[] = $this->archive($project);
         return $result;
     }
 
@@ -202,7 +197,6 @@ class BuildService
         }
 
         $zip->close();
-
         return $archivePath;
     }
 

@@ -20,8 +20,10 @@ class ProjectRepository extends ServiceEntityRepository
         parent::__construct($registry, Project::class);
     }
 
-    public function getOneByUuidQueryBuilder(User $user, string $projectUuid, ?Resource $resource = null): ?QueryBuilder
-    {
+    public function getOneByUuidQueryBuilder(
+        User $user,
+        string $projectUuid
+    ): ?QueryBuilder {
 
         $queryBuilder = $this->createQueryBuilder(self::ALIAS);
         $queryBuilder
@@ -30,11 +32,21 @@ class ProjectRepository extends ServiceEntityRepository
             ->andWhere(self::ALIAS . '.uuid=:uuid')
             ->andWhere(self::ALIAS . '.owner=:user')
 
-
             ->setParameter('uuid', $projectUuid)
             ->setParameter('user', $user)
 
         ;
+
+        return $queryBuilder;
+    }
+
+    public function getOneByUuidWithParentsQueryBuilder(
+        User $user,
+        string $projectUuid,
+        ?Resource $resource = null
+    ): ?QueryBuilder {
+
+        $queryBuilder = clone $this->getOneByUuidQueryBuilder($user, $projectUuid);
 
         if (!$resource) {
             $queryBuilder->andWhere(ResourceRepository::ALIAS . '.parent IS NULL');
@@ -44,9 +56,6 @@ class ProjectRepository extends ServiceEntityRepository
                 ->setParameter('parentResource', $resource)
             ;
         }
-
-
-
         return $queryBuilder;
     }
 }

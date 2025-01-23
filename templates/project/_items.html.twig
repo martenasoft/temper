@@ -10,7 +10,7 @@
         <tbody>
         {% for resource in resources %}
             <tr>
-                <td><a href="{{ path('app_project_edit', {projectUuid: project.uuid, resourceUuid: resource.uuid}) }}"> {{ resource.name }} </a> </td>
+                <td><a href="{{ path('app_project_item', {projectUuid: project.uuid, resourceUuid: resource.uuid}) }}"> {{ resource.name }} </a> </td>
                 <td>{{ resource.type.name }}</td>
                 <td class="text-end">
                     <a href="{{ path('app_upload', {projectUuid: project.uuid, resourceUuid: resource.uuid}) }}" class="btn btn-dark">Upload</a>

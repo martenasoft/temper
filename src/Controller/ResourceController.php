@@ -83,7 +83,7 @@ final class ResourceController extends AbstractController
     ]
     public function edit(string $projectUuid, string $resourceUuid, Request $request): Response
     {
-        $obj = $this->projectService->getProjectResourceByUUid($this->getUser(), $projectUuid, $resourceUuid);
+        $obj = $this->projectService->getProjectResourceByUUid($this->getUser(), $projectUuid, $resourceUuid, false);
         $project = $obj['project'] ?? null;
         $resource = $obj['resource'] ?? null;
 
@@ -107,7 +107,10 @@ final class ResourceController extends AbstractController
     ]
     public function move(string $projectUuid, string $resourceUuid, Request $request): Response
     {
-        $obj = $this->projectService->getProjectResourceByUUid($this->getUser(), $projectUuid, $resourceUuid);
+        $obj = $this
+            ->projectService
+            ->getProjectResourceByUUid($this->getUser(), $projectUuid, $resourceUuid, false);
+
         $project = $obj['project'] ?? null;
         $resource = $obj['resource'] ?? null;
 

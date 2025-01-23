@@ -15,14 +15,15 @@
             <div class="col-4 pt-4">
                 <button type="submit" class="btn btn-lg btn-dark">go</button>
             </div>
-
+            {{ form_end(form) }}
 
             {% if result is not empty %}
-
+            <form action="{{ path('app_find_save', {projectUuid: projectUuid}) }}" method="post">
                     <table class="table">
                     <thead>
                     <tr>
                         <th><input type="checkbox"></th>
+                        <th></th>
                         <th>Found</th>
                         <th>Replace to</th>
                     </tr>
@@ -31,6 +32,7 @@
                     {% for path,items in result %}
                         <tr>
                             <td><input type="checkbox" name="ch[path][{{ path }}]" checked></td>
+                            <td>Path</td>
                             <td>{{ path }}</td>
                             <td>
                                 <input
@@ -45,8 +47,10 @@
                         {% if items.name != items.nameReplace %}
                         <tr>
                             <td><input type="checkbox" name="ch[path][{{ path }}]" checked></td>
+                            <td>Name</td>
                             <td>{{ items.name }}</td>
                             <td>
+
                                 <input
                                         class="form-control"
                                         type="text"
@@ -63,6 +67,7 @@
 
                             <tr>
                                 <td><input type="checkbox" name="ch[file][{{ path }}]" checked></td>
+                                <td>File content</td>
                                 <td>
                                     <code>
                                         <table>
@@ -116,9 +121,9 @@
                     <button class="btn btn-dark btn-lg">Save</button>
 
             {% endif %}
-
+            </form>
         </div>
-    {{ form_end(form) }}
+
 
 
 {% endblock %}

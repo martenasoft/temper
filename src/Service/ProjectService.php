@@ -64,7 +64,6 @@ class ProjectService
                     $content = file_get_contents($path_);
                 }
 
-
                 $resource = $this
                     ->resourceRepository
                     ->getResourceByProjectUuidAndNameQueryBuilder($user, $project->getUuid(), $name)
@@ -72,7 +71,6 @@ class ProjectService
                     ->setParameter('type', $type)
                     ->getQuery()
                     ->getOneOrNullResult();
-
 
                 if (!$resource) {
                     $resource = new Resource();
@@ -106,7 +104,8 @@ class ProjectService
     public function getProjectResourceByUuid(
         User $user,
         string $projectUuid,
-        ?string $resourceUuid = null
+        ?string $resourceUuid = null,
+        ?bool $isParent = false
     ): array
     {
         $resource = null;
@@ -118,18 +117,23 @@ class ProjectService
                 ->getQuery()
                 ->getOneOrNullResult()
             ;
+
+            if ($resource?->getType()->value === 2) {
+                $isParent = false;
+            }
         }
 
+        if ($isParent) {
+            $queryBuilder = $this
+                ->projectRepository
+                ->getOneByUuidWithParentsQueryBuilder($user, $projectUuid, $resource);
+        } else {
+            $queryBuilder = $this->projectRepository->getOneByUuidQueryBuilder($user, $projectUuid);
+        }
 
-        $project = $this
-            ->projectRepository
-            ->getOneByUuidQueryBuilder($user, $projectUuid, $resource)
+        $project = $queryBuilder
             ->getQuery()
-            ->getOneOrNullResult()
-        ;
-
-      //  dd($resourceUuid);
-
+            ->getOneOrNullResult();
 
 
         return [
@@ -158,17 +162,26 @@ class ProjectService
         $keys = join('|', array_keys(BuildService::REPLACE_FUNCTIONS));
 
         foreach ($projectQueryBuilder->getQuery()->getResult() as $item) {
+
             foreach ($item->getResources() as $resource) {
-                if (
-                    preg_match_all("/__({$keys})__([A-Z_]+)+__/", $resource->getContent(), $matches) &&
-                    !empty($matches[0])
-                ) {
-                    foreach ($matches[0] as $item) {
-                        if (!isset($result[$item])) {
-                            $result[] = $item;
+
+                foreach (['name', 'content', 'path'] as $item) {
+                    $functionName = "get".ucfirst($item);
+                    if (method_exists($resource, $functionName)) {
+                        $value = $resource->$functionName();
+
+                        if (
+                            preg_match_all("/__({$keys})__([A-Z_]+)+__/", $value, $matches) &&
+                            !empty($matches[0])
+                        ) {
+                            foreach ($matches[0] as $item) {
+                                if (!isset($result[$item])) {
+                                    $result[] = $item;
+                                }
+                            }
+
                         }
                     }
-
                 }
             }
         }

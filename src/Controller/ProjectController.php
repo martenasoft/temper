@@ -22,9 +22,10 @@ final class ProjectController extends AbstractController
 
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private ProjectService $projectService,
-        private BuildService $buildService
-    ) {
+        private ProjectService         $projectService,
+        private BuildService           $buildService
+    )
+    {
 
     }
 
@@ -49,8 +50,8 @@ final class ProjectController extends AbstractController
             $this->addFlash('success', 'Project created.');
             return $this->redirectToRoute(
                 'app_project_edit', [
-                    'projectUuid' => $project->getUuid()
-                ],
+                'projectUuid' => $project->getUuid()
+            ],
                 Response::HTTP_SEE_OTHER
             );
         }
@@ -69,13 +70,21 @@ final class ProjectController extends AbstractController
     ]
     public function show(Request $request, string $projectUuid): Response
     {
+        $obj = $this->projectService->getProjectResourceByUuid($this->getUser(), $projectUuid);
+        $project = $obj['project'] ?? null;
+
+        if (!$project) {
+            throw $this->createNotFoundException();
+        }
+
         $templates = $this->projectService->collectTemplates($projectUuid, $this->getUser());
         $form = $this->projectService->initForm($this->createFormBuilder(), $templates);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
-            $result = $this->buildService->build($this->getUser(), $projectUuid, $templates, $data);
+            $this->projectService->removeDirs($project);
+            $this->buildService->build($this->getUser(), $projectUuid, $templates, $data, $project);
             $this->addFlash('success', 'Project successfully built.');
             return $this->redirectToRoute(
                 'app_project_download', [
@@ -100,16 +109,17 @@ final class ProjectController extends AbstractController
     {
         $obj = $this->projectService->getProjectResourceByUuid($this->getUser(), $projectUuid);
         $project = $obj['project'] ?? null;
-
         $path = $this->buildService->getBuildArchivePath() . DIRECTORY_SEPARATOR . $projectUuid . '.zip';
 
         if ($get !== null) {
-            return new StreamedResponse(function () use ($path) {
+            return new StreamedResponse(function () use ($path, $project) {
                 $outputStream = fopen('php://output', 'wb');
                 $fileStream = fopen($path, 'rb');
                 stream_copy_to_stream($fileStream, $outputStream);
                 fclose($fileStream);
                 fclose($outputStream);
+
+                $this->projectService->removeDirs($project);
 
             }, 200, [
                 'Content-Type' => 'application/zip',
@@ -125,21 +135,30 @@ final class ProjectController extends AbstractController
     }
 
     #[Route(
-        '/edit/{projectUuid}/{resourceUuid}',
+        '/edit{projectUuid}/{resourceUuid}',
         name: 'app_project_edit',
+        defaults: ['resourceUuid' => null],
+        methods: ['GET', 'POST'])
+    ]
+    #[Route(
+        '/item/{projectUuid}/{resourceUuid}',
+        name: 'app_project_item',
         defaults: ['resourceUuid' => null],
         methods: ['GET', 'POST'])
     ]
     public function edit(
         Request $request,
-        string $projectUuid,
+        string  $projectUuid,
         ?string $resourceUuid = null,
-    ): Response {
+    ): Response
+    {
+        $isParent = ($request->attributes->get('_route') === 'app_project_item');
+        $obj = $this
+            ->projectService
+            ->getProjectResourceByUuid($this->getUser(), $projectUuid, $resourceUuid, $isParent);
 
-        $obj = $this->projectService->getProjectResourceByUuid($this->getUser(), $projectUuid, $resourceUuid);
         $project = $obj['project'] ?? null;
         $resource = $obj['resource'] ?? null;
-
 
         if (!$project) {
             throw $this->createNotFoundException();
@@ -161,7 +180,6 @@ final class ProjectController extends AbstractController
         }
 
 
-
         return $this->render('project/edit.html.twig', [
             'project' => $project,
             'form' => $form,
@@ -169,6 +187,7 @@ final class ProjectController extends AbstractController
             'resources' => $project->getResources(),
         ]);
     }
+
 
     #[Route('/delete/{projectUuid}', name: 'app_project_delete', methods: ['GET'])]
     public function delete(string $projectUuid): Response
