@@ -1,0 +1,10 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New ProjectMessage{% endblock %}
+{% block h1 %}New ProjectMessage{% endblock %}
+
+{% block body %}
+
+    {{ include('project_message/_form.html.twig', {back_uri: path('app_project_message_index')}) }}
+
+{% endblock %}

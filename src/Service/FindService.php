@@ -2,7 +2,9 @@
 
 namespace App\Service;
 
+use App\Dictionary\TemplatesDictionary;
 use App\Entity\User;
+use App\Helper\StringHelper;
 use App\Repository\ProjectRepository;
 use App\Repository\ResourceRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -21,11 +23,15 @@ class FindService
 
     public function findByWord(User $user, string $projectUuid, string $word, string $replace): array
     {
+        $replace = strtoupper($replace);
         $result = [];
-        $queryBuilder = $this->projectRepository->getOneByUuidQueryBuilder($user, $projectUuid);
+        $queryBuilder = $this->projectRepository->getOneByUuidQueryBuilder($user, $projectUuid, isFindParents: false);
         $camelCase = s($word)->camel()->toString();
         $snackCase = s($word)->snake()->toString();
+        $uppserCase = s($word)->upper()->toString();
         $word = addslashes($word);
+        $types = ["TSC", "TSC", "TUC", "TTC"];
+
         foreach ($this
                      ->resourceRepository
                      ->findByWordQueryBuilder(
@@ -37,6 +43,12 @@ class FindService
                      ->getOneOrNullResult()
                      ?->getResources() ?? [] as $item) {
 
+            $fileName = ($item->getType()->value === 2 ? $item->getName() : '');
+            $fileExtension = (!empty($fileName) ?  pathinfo($fileName, PATHINFO_EXTENSION) : '');
+            $lan = TemplatesDictionary::LANGS[$fileExtension] ?? null;
+
+
+
             $items_ = [];
             if (!empty($item->getContent())) {
                 $file = explode("\n", $item->getContent());
@@ -44,21 +56,29 @@ class FindService
                     $lineNumber = 1;
 
                     foreach ($file as $fileItem) {
+                        $fileItemReplace = $this->find($fileItem, $word, $replace);
 
-                        if (
-                            stripos($fileItem, $word) !== false ||
-                            stripos($fileItem, $snackCase) !== false ||
-                            stripos($fileItem, $camelCase) !== false
-                        ) {
+                        if (!empty($lan)) {
+                            foreach ($lan as $type => $lanItem) {
+                                if (
+                                    isset($lanItem['FILE_EXTENSION']) &&
+                                    in_array( '.'. $fileExtension, $lanItem['FILE_EXTENSION']) &&
+                                    isset($lanItem['FIRST_LINE_SYMBOL']) &&
+                                    StringHelper::isFirstSymbol($fileItem, $lanItem['FIRST_LINE_SYMBOL'])
+                                ) {
+                               //     $fileItemReplace = $this->find($fileItemReplace, $word, $replace, $type, force: true);
+                                }
+                            }
+                        }
+                        $word = stripslashes($word);
 
-                            $fileItemReplace = $fileItem;
-                            $word = stripslashes($word);
-                            $snackCase = stripslashes($snackCase);
-                            $camelCase = stripslashes($camelCase);
-                            $fileItemReplace = str_replace($word, $replace, $fileItemReplace);
-                            $fileItemReplace = str_replace($snackCase, $replace, $fileItemReplace);
-                            $fileItemReplace = str_replace($camelCase, $replace, $fileItemReplace);
+                        $fileItemReplace = $this->find($fileItemReplace, $word, $replace);
 
+                        foreach ($types as $typeItem) {
+
+                        }
+
+                        if ($fileItemReplace !== $fileItem) {
                             $items_[] = [
                                 'lineNumber' => $lineNumber,
                                 'line' => $fileItem,
@@ -81,32 +101,26 @@ class FindService
                 'items' => $items_
             ];
 
-            $pathItemReplace = $item->getPath();
+            $pathItemReplace = $this->find($item->getPath(), $word, $replace);
+            $pathItemReplace = $this->find($pathItemReplace, $word, $replace, "TSC");
+            $pathItemReplace = $this->find($pathItemReplace, $word, $replace, "TSC");
+            $pathItemReplace = $this->find($pathItemReplace, $word, $replace, "TUC");
+            $pathItemReplace = $this->find($pathItemReplace, $word, $replace, "TTC");
 
-            if (
-                stripos($pathItemReplace, $word) !== false ||
-                stripos($pathItemReplace, $snackCase) !== false ||
-                stripos($pathItemReplace, $camelCase) !== false
-            ) {
-                $pathItemReplace = str_replace($word, $replace, $pathItemReplace);
-                $pathItemReplace = str_replace($snackCase, $replace, $pathItemReplace);
-                $pathItemReplace = str_replace($camelCase, $replace, $pathItemReplace);
-
-                $res['pathReplace'] = $pathItemReplace;
+            if ($item->getPath() !== $pathItemReplace) {
+                $res['pathItemReplace'] = $pathItemReplace;
             }
 
-            $nameItemReplace = $item->getName();
-            if (
-                stripos($nameItemReplace, $word) !== false ||
-                stripos($nameItemReplace, $snackCase) !== false ||
-                stripos($nameItemReplace, $camelCase) !== false
-            ) {
-                $nameItemReplace = str_replace($word, $replace, $nameItemReplace);
-                $nameItemReplace = str_replace($snackCase, $replace, $nameItemReplace);
-                $nameItemReplace = str_replace($camelCase, $replace, $nameItemReplace);
+            $nameItemReplace = $this->find($item->getName(), $word, $replace);
+            $nameItemReplace = $this->find($nameItemReplace, $word, $replace, "TSC");
+            $nameItemReplace = $this->find($nameItemReplace, $word, $replace, "TSC");
+            $nameItemReplace = $this->find($nameItemReplace, $word, $replace, "TUC");
+            $nameItemReplace = $this->find($nameItemReplace, $word, $replace, "TTC");
 
+            if ($item->getName() !== $nameItemReplace) {
                 $res['nameReplace'] = $nameItemReplace;
             }
+
             $result[$item->getPath()] = $res;
         }
 
@@ -170,9 +184,15 @@ class FindService
                     }
                     $resource->setContent(implode("\n", $content));
                 }
-
                 $this->entityManager->flush();
             }
         }
+    }
+
+    private function find(string $fileItem, string $word, string $replace, string $type = 'TCCF', bool $force = false): string
+    {
+        $result = StringHelper::replaceType($fileItem, $word, $replace);
+
+        return $result;
     }
 }

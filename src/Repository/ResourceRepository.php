@@ -103,20 +103,37 @@ class ResourceRepository extends ServiceEntityRepository
 
     }
 
-    public function getRecursive(?Project $project, ?string $type = null, ?User $user = null)
-    {
-        $query = '';
+    public function getRecursive(
+        ?Project $project = null,
+        ?string $type = null,
+        ?User $user = null,
+        ?Resource $resource = null,
+        bool $isDebug = false,
+        ?string $projectUuid = null,
+        ?string $resourceUuid = null,
+    ) {
+        $query = 'parent_id IS NULL';
 
-        if (!empty($project)) {
-            $query = " AND project_id = :project_id ";
+        if (!empty($resource)) {
+            $query = 'parent_id = ' . $resource->getId();
+        } elseif (!empty($resourceUuid)) {
+            $query = " r.uuid = '{$resourceUuid}'";
         }
 
+        if (!empty($project)) {
+            $query .= " AND project_id = " . $project->getId();
+        } elseif (!empty($projectUuid)) {
+            $query .= " AND p.uuid = '{$projectUuid}'";
+        }
+
+
+
         if (!empty($type)) {
-            $query .= " AND r.type = :type ";
+            $query .= " AND r.type = " . $type;
         }
 
         if (!empty($user)) {
-            $query .= " AND r.owner_id = :owner ";
+            $query .= " AND r.owner_id = " .$user->getId();
         }
 
         $sql = "WITH RECURSIVE resource_hierarchy AS (
@@ -125,42 +142,37 @@ class ResourceRepository extends ServiceEntityRepository
                         r.uuid,
                         r.name,
                         r.parent_id,
+                        p.name as project_name,
                         CAST(r.name AS VARCHAR) AS path,
                         0 AS depth 
                     FROM resource r
                     INNER JOIN public.project p ON r.project_id = p.id
-                    WHERE parent_id IS NULL  $query
+                    WHERE $query
                     UNION ALL
                     SELECT
                         r.id,
                         r.uuid,
                         r.name,
                         r.parent_id,
+                        p.name as project_name,
                         CAST(rh.path || '/' || r.name AS VARCHAR(255)) AS path,
                         rh.depth + 1 AS depth
                     FROM resource r
+                    INNER JOIN public.project p ON r.project_id = p.id
                     INNER JOIN resource_hierarchy rh
                         ON r.parent_id = rh.id
                 )
-                SELECT * FROM resource_hierarchy;";
+                SELECT * FROM resource_hierarchy ORDER BY id ASC;";
+
+        if ($isDebug) {
+            dd($sql);
+        }
+
 
         $conn = $this->getEntityManager()->getConnection();
         $stmt = $conn->prepare($sql);
 
-
-        if (!empty($type)) {
-            $params['type'] = $type;
-        }
-
-        if (!empty($project)) {
-            $params['project_id'] = $project->getId();
-        }
-
-        if (!empty($user)) {
-            $params['owner'] = $user->getId();
-        }
-
-        $res = $stmt->executeQuery($params);
+        $res = $stmt->executeQuery();
 
         return $res->fetchAllAssociative();
     }
@@ -225,5 +237,13 @@ class ResourceRepository extends ServiceEntityRepository
 
         $queryBuilder->andWhere($orX);
         return $queryBuilder;
+    }
+
+    public function insert($data)
+    {
+        dd($data);
+        $tableName = $this->getEntityManager()->getClassMetadata(self::ALIAS)->getTableName();
+        $conn = $this->getEntityManager()->getConnection();
+        $conn->insert($tableName, $data);
     }
 }

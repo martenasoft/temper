@@ -1,0 +1,23 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}ProjectMessage{% endblock %}
+
+{% block body %}
+    <h1>ProjectMessage</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>Name</th>
+                <td>{{ project_message.name }}</td>
+            </tr>
+            <tr>
+                <th>Message</th>
+                <td>{{ project_message.message | raw }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_project_message_index') }}">back to list</a>
+
+{% endblock %}

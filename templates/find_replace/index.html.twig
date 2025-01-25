@@ -4,6 +4,16 @@
 {% block h1 %}Find/Replace{% endblock %}
 
 {% block body %}
+
+    <div class="alert alert-warning">
+        <pre>
+            {% for line in constant('App\\Service\\BuildService::TITLES')  %}
+                <p>{{ line }}</p>
+            {% endfor %}
+
+        </pre>
+    </div>
+
     {{ form_start(form) }}
         <div class="row">
             <div class="col-4">
@@ -25,7 +35,7 @@
                         <th></th>
                         <th></th>
                         <th>Found</th>
-                        <th>Replace to</th>
+
                     </tr>
                     </thead>
                     <tbody>
@@ -37,57 +47,71 @@
                             <td><input type="checkbox" name="ch[path][{{ path }}]" checked></td>
                             <td>Path</td>
                             <td>{{ path }}</td>
-                            <td>
-                                <input
-                                        class="form-control"
-                                        type="text"
-                                        name="replace[path][{{ path }}][{{ items.uuid }}]"
-                                        value="{{ items.pathReplace }}"
-                                >
 
-                            </td>
                         </tr>
+                            <tr>
+                                <td></td>
+                                <td colspan="2">
+                                    <input
+                                            class="form-control"
+                                            type="text"
+                                            name="replace[path][{{ path }}][{{ items.uuid }}]"
+                                            value="{{ items.pathReplace }}"
+                                    >
+
+                                </td>
+                            </tr>
                         {% endif %}
 
                         {% if items.name != items.nameReplace and items.nameReplace is not null %}
                         <tr>
                             <td><input type="checkbox" name="ch[path][{{ path }}]" checked></td>
-                            <td>Name</td>
+                            <td>File Name</td>
                             <td>{{ items.name }}</td>
-                            <td>
-
-                                <input
-                                        class="form-control"
-                                        type="text"
-                                        name="replace[name][{{ path }}][{{ items.uuid }}]"
-                                        value="{{ items.nameReplace }}"
-                                >
-
-                            </td>
                         </tr>
+                            <tr>
+                                <td></td>
+
+                                <td colspan="2">
+
+                                    <input
+                                            class="form-control"
+                                            type="text"
+                                            name="replace[name][{{ path }}][{{ items.uuid }}]"
+                                            value="{{ items.nameReplace }}"
+                                    >
+
+                                </td>
+                            </tr>
                         {% endif %}
 
                         {% if items.items[0] is defined %}
 
-
                             <tr>
-                                <td><input type="checkbox" name="ch[file][{{ path }}]" checked></td>
+                                <td><input type="checkbox" name="ch[path][{{ path }}]" checked></td>
                                 <td>File content</td>
                                 <td>
                                     <code>
-                                        <table>
-                                            {% if items.items[0] is defined and items.items[0].lineNumber > 1 %}
-                                                <tr>
-                                                    <td class="bg-dark ps-1 pe-1">1</td>
-                                                    <td class="ps-3"> ... </td>
-                                                </tr>
-                                            {% endif %}
+                                        <table class="w-100">
+                                            <tr>
+                                                <td colspan="3">{{ items.name }}</td>
+                                            </tr>
                                             {% for contentItem in items.items %}
-
 
                                                 <tr>
                                                     <td class="bg-dark ps-1 pe-1">{{ contentItem.lineNumber }}</td>
                                                     <td class="ps-3">{{ contentItem.line }} </td>
+                                                </tr>
+                                                <tr>
+                                                    <td></td>
+                                                    <td class="ps-3">
+                                                        <input
+                                                                class="form-control"
+                                                                type="text"
+                                                                name="replace[file][{{ path }}][{{ items.uuid }}][{{ contentItem.lineNumber }}]"
+                                                                value="{{ contentItem.lineReplace }}"
+                                                        >
+                                                    </td>
                                                 </tr>
 
                                             {% endfor %}
@@ -97,25 +121,7 @@
 
 
                                 </td>
-                                <td>
 
-                                    <table class="w-100">
-                                        {% for contentItem in items.items  %}
-                                            <tr>
-                                                <td class="ps-3">
-                                                    <input
-                                                            class="form-control"
-                                                            type="text"
-                                                            name="replace[file][{{ path }}][{{ items.uuid }}][{{ contentItem.lineNumber }}]"
-                                                            value="{{ contentItem.lineReplace }}"
-                                                    >
-                                                </td>
-                                            </tr>
-
-                                        {% endfor %}
-                                    </table>
-
-                                </td>
                             </tr>
 
                         {% endif %}

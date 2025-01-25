@@ -105,7 +105,7 @@ class ProjectService
         User $user,
         string $projectUuid,
         ?string $resourceUuid = null,
-        ?bool $isParent = false
+        bool $isFindParents = true
     ): array
     {
         $resource = null;
@@ -115,26 +115,13 @@ class ProjectService
                 ->resourceRepository
                 ->getOneByUuidQueryBuilder($user, $resourceUuid)
                 ->getQuery()
-                ->getOneOrNullResult()
-            ;
-
-            if ($resource?->getType()->value === 2) {
-                $isParent = false;
-            }
+                ->getResult()[0] ?? null;
         }
 
-        if ($isParent) {
-            $queryBuilder = $this
-                ->projectRepository
-                ->getOneByUuidWithParentsQueryBuilder($user, $projectUuid, $resource);
-        } else {
-            $queryBuilder = $this->projectRepository->getOneByUuidQueryBuilder($user, $projectUuid);
-        }
-
+        $queryBuilder = $this->projectRepository->getOneByUuidQueryBuilder($user, $projectUuid, $resource, $isFindParents);
         $project = $queryBuilder
             ->getQuery()
             ->getOneOrNullResult();
-
 
         return [
             'project' => $project,
@@ -152,18 +139,13 @@ class ProjectService
         return $this->resourceRepository->getItemsQueryBuilder($project, $resource)->getQuery()->getResult();
     }
 
-    public function collectTemplates(string $projectUuid, User $user): array
+    public function collectTemplates(Project $project): array
     {
-        $projectQueryBuilder = $this->resourceRepository->getAllFiles(
-            queryBuilder: $this->projectRepository->getOneByUuidQueryBuilder($user, $projectUuid)
-        );
 
         $result = [];
         $keys = join('|', array_keys(BuildService::REPLACE_FUNCTIONS));
 
-        foreach ($projectQueryBuilder->getQuery()->getResult() as $item) {
-
-            foreach ($item->getResources() as $resource) {
+            foreach ($project->getResources() as $resource) {
 
                 foreach (['name', 'content', 'path'] as $item) {
                     $functionName = "get".ucfirst($item);
@@ -171,11 +153,12 @@ class ProjectService
                         $value = $resource->$functionName();
 
                         if (
-                            preg_match_all("/__({$keys})__([A-Z_]+)+__/", $value, $matches) &&
+                            preg_match_all("/__({$keys})_([A-Z_]+)+__/", $value, $matches) &&
                             !empty($matches[0])
                         ) {
+
                             foreach ($matches[0] as $item) {
-                                if (!isset($result[$item])) {
+                                if (!in_array($item, $result)) {
                                     $result[] = $item;
                                 }
                             }
@@ -184,7 +167,6 @@ class ProjectService
                     }
                 }
             }
-        }
 
         return array_unique($result);
     }

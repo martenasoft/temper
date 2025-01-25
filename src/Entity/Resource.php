@@ -48,7 +48,7 @@ class Resource
     #[ORM\Column(length: 255)]
     private ?string $slug = null;
 
-    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'resources')]
+    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'resources', cascade: ['persist', 'remove'])]
     private ?self $parent = null;
 
     /**

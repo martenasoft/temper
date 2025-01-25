@@ -12,6 +12,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -171,8 +172,14 @@ final class ResourceController extends AbstractController
         }
         $tree = $this->resourceService->getTree(user: $this->getUser());
 
+
         $formBuilder = $this->createFormBuilder();
-        $choices = array_combine(array_column($tree, 'name'), array_column($tree, 'uuid'));
+        $choices = [];
+
+       array_map(function ($item) use (&$choices) {
+
+            $choices[$item['project_name'] . '->' . $item['name']] = $item['uuid'];
+        }, $tree);
 
         $formBuilder->add('Dir', ChoiceType::class, [
             'choices' => $choices,
@@ -185,17 +192,23 @@ final class ResourceController extends AbstractController
         $form = $formBuilder->getForm();
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $data = $form->getData();
-            $this->resourceService->copy($project, $resource, $data['Dir']);
-            $params = ['projectUuid' => $project->getUuid()];
-            if ($resourceUuid) {
-                $params['resourceUuid'] = $resourceUuid;
+        if ($form->isSubmitted()) {
+            if ($form->isValid()) {
+
+                $data = $form->getData();
+                $this->resourceService->copy($project, $resource, $data['Dir'][0]);
+                $params = ['projectUuid' => $project->getUuid()];
+                if ($resourceUuid) {
+                    $params['resourceUuid'] = $resourceUuid;
+                }
+
+                $this->resourceService->updatePath($project);
+            } else {
+                $form->addError(new FormError($form->get('Dir')->getErrors()[0]));
             }
 
-            $this->resourceService->updatePath($project);
 
-            return $this->redirectToRoute('app_project_item', $params, Response::HTTP_SEE_OTHER);
+         //   return $this->redirectToRoute('app_project_item', $params, Response::HTTP_SEE_OTHER);
         }
 
         return $this->render('resource/copy.html.twig', [
@@ -223,6 +236,7 @@ final class ResourceController extends AbstractController
             'success',
             $this->addFlash('success', self::getResourceTypeAndName($resource) . ' has been deleted.')
         );
+
 
         return $this->redirectToRoute(
             'app_project_item', [

@@ -70,14 +70,16 @@ final class ProjectController extends AbstractController
     ]
     public function show(Request $request, string $projectUuid): Response
     {
-        $obj = $this->projectService->getProjectResourceByUuid($this->getUser(), $projectUuid);
+        $obj = $this->projectService->getProjectResourceByUuid($this->getUser(), $projectUuid, isFindParents: false);
         $project = $obj['project'] ?? null;
+
+
 
         if (!$project) {
             throw $this->createNotFoundException();
         }
 
-        $templates = $this->projectService->collectTemplates($projectUuid, $this->getUser());
+        $templates = $this->projectService->collectTemplates($project);
         $form = $this->projectService->initForm($this->createFormBuilder(), $templates);
         $form->handleRequest($request);
 
@@ -152,13 +154,14 @@ final class ProjectController extends AbstractController
         ?string $resourceUuid = null,
     ): Response
     {
-        $isParent = ($request->attributes->get('_route') === 'app_project_item');
+
         $obj = $this
             ->projectService
-            ->getProjectResourceByUuid($this->getUser(), $projectUuid, $resourceUuid, $isParent);
+            ->getProjectResourceByUuid($this->getUser(), $projectUuid, $resourceUuid);
 
         $project = $obj['project'] ?? null;
         $resource = $obj['resource'] ?? null;
+
 
         if (!$project) {
             throw $this->createNotFoundException();

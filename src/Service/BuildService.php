@@ -23,12 +23,14 @@ class BuildService
         'TCC' => 'templateCamelCase',
         'TCCF' => 'templateCamelCaseUCFirst',
         'TSC' => 'templateSnackCase',
+        'TUC' => 'templateUpperCase',
     ];
 
     public const TITLES = [
         'TCC' => 'Camel case. Example: __TCC__SOME_NAME__ Result: someName',
         'TCCF' => 'Camel case with capital first. Example: __TCCF__SOME_NAME__ Result: SomeName',
         'TSC' => 'Snake case. Example: __TSC__SOME_NAME__ Result: some_mame',
+        'TUC' => 'Upper case case. Example: __TUC__SOME_NAME__ Result: SOME_NAME',
     ];
 
     private string $buildPath = '';
@@ -211,5 +213,9 @@ class BuildService
     public function templateSnackCase(string $value): string
     {
         return s($value)->snake()->toString();
+    }
+    public function templateUpperCase(string $value): string
+    {
+        return strtoupper($value);
     }
 }

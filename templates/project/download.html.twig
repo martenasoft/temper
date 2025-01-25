@@ -8,6 +8,15 @@
 {% block body %}
 
     <h3>Get {{ project.name }}</h3>
+
+    {% if project.projectMessages is not empty %}
+        <div class="alert alert-warning">
+        {% for item in project.projectMessages %}
+            <p>{{ item.message | raw}}</p>
+        {% endfor %}
+        </div>
+    {% endif %}
+
     <a class="btn btn-primary btn-lg" href="{{ path('app_project_download', {projectUuid: project.uuid, get: 1}) }}">Download</a>
 
 

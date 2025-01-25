@@ -22,12 +22,29 @@ class ProjectRepository extends ServiceEntityRepository
 
     public function getOneByUuidQueryBuilder(
         User $user,
-        string $projectUuid
+        string $projectUuid,
+        ?Resource $resource = null,
+        bool $isFindParents = true
     ): ?QueryBuilder {
 
         $queryBuilder = $this->createQueryBuilder(self::ALIAS);
+        $orX = $queryBuilder->expr()->orX();
+
+        if (empty($resource)) {
+            $orX->add(ResourceRepository::ALIAS.'.parent IS NULL');
+        } else {
+            $orX->add($queryBuilder->expr()->eq(ResourceRepository::ALIAS.'.parent', ':parent'));
+            $queryBuilder->setParameter('parent', $resource);
+        }
+
+
         $queryBuilder
-            ->leftJoin(self::ALIAS . '.resources', ResourceRepository::ALIAS)
+            ->leftJoin(
+                self::ALIAS . '.resources',
+                ResourceRepository::ALIAS,
+                ($isFindParents ? 'WITH' : null),
+                ($isFindParents ? $orX: null)
+            )
             ->addSelect(ResourceRepository::ALIAS)
             ->andWhere(self::ALIAS . '.uuid=:uuid')
             ->andWhere(self::ALIAS . '.owner=:user')
@@ -37,25 +54,6 @@ class ProjectRepository extends ServiceEntityRepository
 
         ;
 
-        return $queryBuilder;
-    }
-
-    public function getOneByUuidWithParentsQueryBuilder(
-        User $user,
-        string $projectUuid,
-        ?Resource $resource = null
-    ): ?QueryBuilder {
-
-        $queryBuilder = clone $this->getOneByUuidQueryBuilder($user, $projectUuid);
-
-        if (!$resource) {
-            $queryBuilder->andWhere(ResourceRepository::ALIAS . '.parent IS NULL');
-        } else {
-            $queryBuilder
-                ->andWhere(ResourceRepository::ALIAS . '.parent=:parentResource')
-                ->setParameter('parentResource', $resource)
-            ;
-        }
         return $queryBuilder;
     }
 }

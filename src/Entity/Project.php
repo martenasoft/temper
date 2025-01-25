@@ -40,9 +40,16 @@ class Project
     #[ORM\ManyToOne(inversedBy: 'projects')]
     private ?User $owner = null;
 
+    /**
+     * @var Collection<int, ProjectMessage>
+     */
+    #[ORM\ManyToMany(targetEntity: ProjectMessage::class, mappedBy: 'projects')]
+    private Collection $projectMessages;
+
     public function __construct()
     {
         $this->resources = new ArrayCollection();
+        $this->projectMessages = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -133,6 +140,33 @@ class Project
     public function setOwner(?User $owner): static
     {
         $this->owner = $owner;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ProjectMessage>
+     */
+    public function getProjectMessages(): Collection
+    {
+        return $this->projectMessages;
+    }
+
+    public function addProjectMessage(ProjectMessage $projectMessage): static
+    {
+        if (!$this->projectMessages->contains($projectMessage)) {
+            $this->projectMessages->add($projectMessage);
+            $projectMessage->addProject($this);
+        }
+
+        return $this;
+    }
+
+    public function removeProjectMessage(ProjectMessage $projectMessage): static
+    {
+        if ($this->projectMessages->removeElement($projectMessage)) {
+            $projectMessage->removeProject($this);
+        }
 
         return $this;
     }

@@ -11,7 +11,7 @@
             {% for index,item in tree %}
                <div class="form-check">
                    {% if resource.uuid is not defined or resource.uuid != item.uuid %}
-                        <input type="checkbox" id="form_Dir_{{ index }}" name="form[Dir][]" class="form-check-input" value="{{ item['uuid'] }}">
+                        <input type="radio" id="form_Dir_{{ index }}" name="form[Dir][]" class="form-check-input" value="{{ item['uuid'] }}">
                    {% endif %}
                   <label style="padding-left: {{ item['depth'] * 30 }}px" class="form-check-label required" for="form_Dir_{{ index }}">{{ item['name'] }}</label>
                </div>

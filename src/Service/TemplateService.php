@@ -10,7 +10,7 @@ class TemplateService
     {
         $result = [];
         foreach ($templates as $template) {
-            if (preg_match('/__([A-Z]+)__(\w+)__/', $template, $matches) && !empty($matches[2])) {
+            if (preg_match('/__([A-Z]+)_(\w+)__/', $template, $matches) && !empty($matches[2])) {
                 $label = s($matches[2])
                     ->replaceMatches('/\W+|_+|\-+/', '')
                     ->lower()

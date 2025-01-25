@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}ProjectMessage index{% endblock %}
+
+{% block body %}
+    <h1>ProjectMessage index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+
+                <th>Name</th>
+
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for project_message in project_messages %}
+            <tr>
+                <td>{{ project_message.name }}</td>
+
+                <td>
+                    <a href="{{ path('app_project_message_show', {'uuid': project_message.uuid}) }}">show</a>
+                    <a href="{{ path('app_project_message_edit', {'uuid': project_message.uuid}) }}">edit</a>
+                    <a href="{{ path('app_project_message_delete', {'uuid': project_message.uuid}) }}">delete</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="4">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_project_message_new') }}">Create new</a>
+{% endblock %}

@@ -49,26 +49,31 @@ class ResourceService
         }
     }
 
-    public function copy(Project $project, ?Resource $resource = null, array $uuids = []): void
+    public function copy(Project $project, ?Resource $parentResource = null, string $uuid = '', int $deep = 0): void
     {
-        $items = $this
+        if (empty($uuid)) {
+            return;
+        }
+
+        $selectedResource = $this
             ->resourceRepository
-            ->findByUuidQueryBuilder($uuids)
+            ->findByUuidQueryBuilder([$uuid])
             ->getQuery()
-            ->getResult();
+            ->getResult()[0] ?? null;
+
+        $items = $selectedResource?->getResources();
 
         if (empty($items)) {
             return;
         }
 
-
-        foreach ($items as $item) {
+        foreach ($items as $i => $item) {
 
             $newResource = new Resource();
             $newResource->setProject($project);
             $name = $item->getName();
 
-            if ($item->getUUid() === $resource?->getUuid()) {
+            if ($item->getUUid() === $selectedResource?->getUuid()) {
                 $name .= "Copy0";
                 if (preg_match('/(\w+)(\d+)$/', $name, $matches) && isset($matches[2])) {
                     $name = $matches[1] . (++$matches[2]);
@@ -79,18 +84,30 @@ class ResourceService
                 ->setName($name)
                 ->setType($item->getType())
                 ->setContent($item->getContent())
-                ->setOwner($item->getOwner());
+                ->setOwner($item->getOwner())
+                ->setParent($parentResource);
 
-            if ($resource) {
-                $newResource->setParent($resource);
-            }
-            dump($newResource);
+
             $this->entityManager->persist($newResource);
+            $this->entityManager->flush();
 
+            if ($item->getType()->value === 1) {
+                $this->copy($project, $newResource, $item->getUuid(), ++$deep);
+            }
 
         }
 
-        $this->entityManager->flush();
-        $this->resourceRepository->updatePath($project);
+
+       // $items_ = $this->resourceRepository->findBy(['parent' => $item->getId()]);
+       /* dump([
+            'resurses' => $item->getResources()->toArray(),
+            'deep' => $deep,
+            'resource' => $resource,
+            '$items' => $items,
+            '$uuids' => $uuids
+        ]);*/
+
+     //   $this->copy($project, $newResource, $item->getResources()->toArray(), ++$deep);
+
     }
 }
